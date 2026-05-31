@@ -18,15 +18,26 @@ function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-8 font-medium text-gray-700">
-          <Link to="/" className="hover:text-blue-900 transition">Trang chủ</Link>
+          <Link to="/" className="hover:text-blue-900 transition">
+            Trang chủ
+          </Link>
 
+          {/* Menu dành riêng cho HOST hoặc ADMIN */}
           {user && (user.role === "HOST" || user.role === "ADMIN") && (
-            <Link to="/host" className="hover:text-blue-900 transition">Đăng homestay</Link>
+            <>
+              <Link to="/host" className="hover:text-blue-900 transition">
+                Đăng homestay
+              </Link>
+              <Link to="/dashboard" className="text-orange-600 hover:text-orange-700 font-bold transition">
+                📈 Xem doanh thu
+              </Link>
+            </>
           )}
 
+          {/* Menu xử lý Trạng thái Đăng nhập / Đăng xuất */}
           {user ? (
             <div className="flex items-center gap-6">
-              {/* Nút bấm chuyển sang trang lịch sử đặt phòng */}
+              {/* Lịch sử đặt phòng dành cho mọi User đã đăng nhập */}
               <Link to="/profile" className="text-gray-700 hover:text-blue-950 font-semibold text-sm transition">
                 📜 Lịch sử đặt phòng
               </Link>
@@ -34,9 +45,10 @@ function Navbar() {
               <span className="text-sm bg-blue-50 text-blue-900 px-3 py-1.5 rounded-full font-semibold">
                 👋 {user.name} ({user.role})
               </span>
+              
               <button
                 onClick={handleLogout}
-                className="text-red-500 hover:text-red-700 font-semibold text-sm transition"
+                className="text-red-500 hover:text-red-700 font-semibold text-sm transition cursor-pointer"
               >
                 Đăng xuất
               </button>

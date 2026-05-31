@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Host from "./pages/Host";
 import HomestayDetail from "./pages/HomestayDetail";
 import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard";
 function App() {
 
   return (
@@ -25,6 +26,8 @@ function App() {
         <Route path="/homestay/:id" element={<HomestayDetail />} />
 
         <Route path="/profile" element={<Profile />} />
+
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
 
     </BrowserRouter>

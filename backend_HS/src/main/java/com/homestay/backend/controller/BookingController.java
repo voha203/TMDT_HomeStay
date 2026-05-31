@@ -64,4 +64,38 @@ public class BookingController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+    // 5. API Thống kê doanh thu cho Host để vẽ biểu đồ
+    @GetMapping("/host/{hostId}/analytics")
+    public ResponseEntity<?> getHostAnalytics(@PathVariable Long hostId) {
+        // Lấy toàn bộ các đơn đặt phòng đã được xác nhận của Host này
+        List<Booking> confirmedBookings = bookingRepository.findAll().stream()
+                .filter(b -> b.getHomestay() != null
+                        && b.getHomestay().getUser() != null
+                        && b.getHomestay().getUser().getId().equals(hostId)
+                        && "CONFIRMED".equals(b.getStatus()))
+                .toList();
+
+        // Tính tổng doanh thu
+        double totalRevenue = confirmedBookings.stream()
+                .mapToDouble(Booking::getTotalPrice)
+                .sum();
+
+        // Đếm tổng số đơn đặt phòng thành công
+        int totalBookings = confirmedBookings.size();
+
+        // Tạo một Map để gói dữ liệu trả về cho Frontend
+        java.util.Map<String, Object> analytics = new java.util.HashMap<>();
+        analytics.put("totalRevenue", totalRevenue);
+        analytics.put("totalBookings", totalBookings);
+
+        // Dữ liệu giả lập theo tháng để vẽ biểu đồ cột (Tháng 1 -> Tháng 6)
+        analytics.put("monthlyLabels", java.util.Arrays.asList("Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6"));
+        analytics.put("monthlyData", java.util.Arrays.asList(totalRevenue * 0.1, totalRevenue * 0.15, totalRevenue * 0.2, totalRevenue * 0.12, totalRevenue * 0.18, totalRevenue));
+
+        // Dữ liệu theo danh mục phòng để vẽ biểu đồ tròn (Ví dụ: Villa, Căn hộ, Nhà gỗ)
+        analytics.put("categoryLabels", java.util.Arrays.asList("Căn hộ (Apartment)", "Biệt thự (Villa)", "Nhà gỗ (Bungalow)"));
+        analytics.put("categoryData", java.util.Arrays.asList(totalRevenue * 0.4, totalRevenue * 0.45, totalRevenue * 0.15));
+
+        return ResponseEntity.ok(analytics);
+    }
 }
