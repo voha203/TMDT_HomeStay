@@ -69,13 +69,28 @@ function HomestayDetail() {
     if (!newComment.trim()) return;
 
     try {
+      // 1. Gọi xuống API lấy lịch sử đặt phòng của chính User này để kiểm tra
+      const bookingRes = await axios.get(`http://localhost:8080/api/bookings/user/${user.id}`);
+      const myBookings = bookingRes.data;
+
+      // 2. Kiểm tra xem user này đã từng có đơn nào ĐÃ DUYỆT (CONFIRMED) tại chính homestay này chưa
+      const hasStayed = myBookings.some(
+        (b) => b.homestay?.id === parseInt(id) && b.status === "CONFIRMED"
+      );
+
+      if (!hasStayed) {
+        alert("🔒 Chỉ những khách hàng đã đặt phòng và được Host duyệt thành công mới có quyền để lại đánh giá!");
+        return;
+      }
+
+      // 3. Nếu thỏa mãn thì tiến hành gửi bình luận như cũ
       await axios.post("http://localhost:8080/api/reviews", {
         comment: newComment,
         userName: user.name,
         homestay: { id: id }
       });
-      setNewComment(""); // Xóa sạch ô nhập
-      fetchReviews(); // Re-render lại danh sách bình luận ngay lập tức
+      setNewComment("");
+      fetchReviews();
     } catch (error) {
       console.error(error);
     }

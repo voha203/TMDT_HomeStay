@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
+    // Tìm người dùng bằng mã reset token
+    java.util.Optional<User> findByResetToken(String resetToken);
 }

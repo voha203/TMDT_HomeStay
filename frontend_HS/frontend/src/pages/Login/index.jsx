@@ -47,7 +47,16 @@ function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu</label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">Mật khẩu</label>
+              {/*QUÊN MẬT KHẨU */}
+              <Link 
+                to="/forgot-password" 
+                className="text-xs font-semibold text-blue-900 hover:underline transition"
+              >
+                Quên mật khẩu?
+              </Link>
+            </div>
             <input
               type="password"
               name="password"
@@ -60,7 +69,7 @@ function Login() {
 
           <button
             type="submit"
-            className="w-full bg-blue-900 text-white py-3.5 rounded-xl font-bold hover:bg-blue-800 transition shadow-lg shadow-blue-900/20"
+            className="w-full bg-blue-900 text-white py-3.5 rounded-xl font-bold hover:bg-blue-800 transition shadow-lg shadow-blue-900/20 cursor-pointer"
           >
             Đăng nhập
           </button>

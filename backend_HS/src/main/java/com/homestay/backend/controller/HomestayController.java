@@ -51,4 +51,29 @@ public class HomestayController {
 
         return ResponseEntity.badRequest().body("Không tìm thấy thông tin tài khoản Host này!");
     }
+    // 4. API Sửa thông tin Homestay
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateHomestay(@PathVariable Long id, @RequestBody Homestay newHomestay) {
+        return homestayRepository.findById(id)
+                .map(homestay -> {
+                    homestay.setTitle(newHomestay.getTitle());
+                    homestay.setDescription(newHomestay.getDescription());
+                    homestay.setPrice(newHomestay.getPrice());
+                    homestay.setLocation(newHomestay.getLocation());
+                    homestay.setImage(newHomestay.getImage());
+                    homestayRepository.save(homestay);
+                    return ResponseEntity.ok("Cập nhật thông tin Homestay thành công!");
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // 5. API Xóa hoàn toàn Homestay
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteHomestay(@PathVariable Long id) {
+        if (homestayRepository.existsById(id)) {
+            homestayRepository.deleteById(id);
+            return ResponseEntity.ok("Xóa Homestay thành công!");
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

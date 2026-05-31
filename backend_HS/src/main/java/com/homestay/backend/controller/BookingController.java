@@ -98,4 +98,15 @@ public class BookingController {
 
         return ResponseEntity.ok(analytics);
     }
+    // 6. API Cập nhật trạng thái thanh toán từ UNPAID sang PAID
+    @PutMapping("/{bookingId}/pay")
+    public ResponseEntity<?> payBooking(@PathVariable Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .map(booking -> {
+                    booking.setPaymentStatus("PAID"); // Đổi thành Đã thanh toán
+                    bookingRepository.save(booking);
+                    return ResponseEntity.ok("Thanh toán đơn hàng thành công!");
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
