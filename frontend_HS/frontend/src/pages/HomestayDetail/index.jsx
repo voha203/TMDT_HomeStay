@@ -79,7 +79,7 @@ function HomestayDetail() {
       );
 
       if (!hasStayed) {
-        alert("🔒 Chỉ những khách hàng đã đặt phòng và được Host duyệt thành công mới có quyền để lại đánh giá!");
+        alert(" Chỉ những khách hàng đã đặt phòng và được Host duyệt thành công mới có quyền để lại đánh giá!");
         return;
       }
 
@@ -96,32 +96,53 @@ function HomestayDetail() {
     }
   };
 
-  const handleBooking = async () => {
+  // HÀM ĐẶT PHÒNG (ĐÃ SỬA BẮT LỖI)
+  const handleBooking = async (e) => {
+    e.preventDefault();
+
     const user = JSON.parse(localStorage.getItem("user"));
+
     if (!user) {
       alert("Bạn phải đăng nhập tài khoản trước khi đặt phòng!");
       navigate("/login");
       return;
     }
+
     if (totalNights <= 0) {
       alert("Ngày trả phòng không hợp lệ!");
       return;
     }
 
-    const bookingData = {
-      user: { id: user.id },
+    const bookingPayload = {
+      checkInDate: checkInDate,   // Chuỗi định dạng YYYY-MM-DD
+      checkOutDate: checkOutDate, // Chuỗi định dạng YYYY-MM-DD
       homestay: { id: homestay.id },
-      checkInDate: checkInDate,
-      checkOutDate: checkOutDate,
+      user: { id: user.id },
       totalPrice: totalPrice,
     };
 
     try {
-      await axios.post("http://localhost:8080/api/bookings", bookingData);
-      alert("🎉 Đặt phòng thành công!");
-      navigate("/");
+      const response = await axios.post("http://localhost:8080/api/bookings", bookingPayload);
+      
+      // Kiểm tra phản hồi thành công từ Backend
+      if (response.status === 201 || response.status === 200) {
+        alert("🎉 Đặt phòng thành công! Vui lòng chờ Host duyệt đơn.");
+        navigate("/profile");
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Lỗi chi tiết khi đặt phòng:", error);
+
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        // Bẻ khóa cấu hình nếu Backend trả về Object thông tin lỗi thay vì String
+        if (typeof errorData === "object" && errorData !== null) {
+          alert("❌ " + (errorData.message || JSON.stringify(errorData)));
+        } else {
+          alert("❌ " + errorData);
+        }
+      } else {
+        alert("❌ Đơn đặt phòng thất bại, hệ thống bận hoặc trùng lịch đặt!");
+      }
     }
   };
 
@@ -147,7 +168,7 @@ function HomestayDetail() {
             
             <hr className="border-gray-100 my-8" />
 
-            {/* KHU VỰC ĐÁNH GIÁ VÀ BÌNH LUẬN (MỚI) */}
+            {/* KHU VỰC ĐÁNH GIÁ VÀ BÌNH LUẬN */}
             <div className="space-y-6">
               <h3 className="text-2xl font-black text-gray-950">Đánh giá từ cộng đồng ({reviews.length})</h3>
               
@@ -160,7 +181,7 @@ function HomestayDetail() {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                 />
-                <button type="submit" className="px-5 py-2.5 bg-gray-900 text-white font-bold text-sm rounded-xl hover:bg-gray-800 transition shadow-sm">
+                <button type="submit" className="px-5 py-2.5 bg-gray-900 text-white font-bold text-sm rounded-xl hover:bg-gray-800 transition shadow-sm cursor-pointer">
                   Gửi bình luận
                 </button>
               </form>
@@ -183,7 +204,7 @@ function HomestayDetail() {
           </div>
         </div>
 
-        {/* BOX TÍNH TIỀN ĐẶT PHÒNG BÊN PHẢI (GIỮ NGUYÊN) */}
+        {/* BOX TÍNH TIỀN ĐẶT PHÒNG BÊN PHẢI */}
         <div className="h-fit sticky top-28 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 space-y-6">
           <div>
             <span className="text-2xl font-black text-blue-900">{homestay.price?.toLocaleString()} VNĐ</span>
@@ -193,12 +214,12 @@ function HomestayDetail() {
           <div className="space-y-4 border border-gray-200 rounded-2xl p-4">
             <div>
               <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Check-in</label>
-              <input type="date" className="w-full focus:outline-none text-sm text-gray-700" value={checkInDate} onChange={(e) => setCheckInDate(e.target.value)} />
+              <input type="date" className="w-full focus:outline-none text-sm text-gray-700 cursor-pointer" value={checkInDate} onChange={(e) => setCheckInDate(e.target.value)} />
             </div>
             <hr className="border-gray-200" />
             <div>
               <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Check-out</label>
-              <input type="date" className="w-full focus:outline-none text-sm text-gray-700" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} />
+              <input type="date" className="w-full focus:outline-none text-sm text-gray-700 cursor-pointer" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} />
             </div>
           </div>
 
@@ -216,7 +237,7 @@ function HomestayDetail() {
             </div>
           )}
 
-          <button onClick={handleBooking} className="w-full bg-blue-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-800 transition shadow-md">
+          <button onClick={handleBooking} className="w-full bg-blue-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-800 transition shadow-md cursor-pointer">
             Đặt phòng ngay
           </button>
         </div>

@@ -2,7 +2,9 @@ package com.homestay.backend.controller;
 
 import com.homestay.backend.entity.Booking;
 import com.homestay.backend.repository.BookingRepository;
+import com.homestay.backend.repository.HomestayRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,16 +18,36 @@ public class BookingController {
     @Autowired
     private BookingRepository bookingRepository;
 
-    // 1. API Đặt phòng (Tạo đơn hàng mới)
+    @Autowired
+    private HomestayRepository homestayRepository;
+
+    // 1. API Đặt phòng (Đã gộp logic kiểm tra ngày tháng và chặn đặt trùng lịch)
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
         try {
+            // Kiểm tra tính hợp lệ: Ngày Check-out phải sau ngày Check-in
+            if (booking.getCheckInDate().isAfter(booking.getCheckOutDate()) || booking.getCheckInDate().isEqual(booking.getCheckOutDate())) {
+                return ResponseEntity.badRequest().body("Ngày trả phòng (Check-out) phải sau ngày nhận phòng (Check-in)!");
+            }
+
+            // Gọi Repository để kiểm tra trùng lịch thực tế (Chống Overbooking)
+            boolean isOccupied = bookingRepository.isRoomOccupied(
+                    booking.getHomestay().getId(),
+                    booking.getCheckInDate(),
+                    booking.getCheckOutDate()
+            );
+
+            if (isOccupied) {
+                return ResponseEntity.badRequest().body("Cảnh báo: Khoảng thời gian này đã có khách khác đặt trước và được Host duyệt. Vui lòng chọn lịch trình khác!");
+            }
+
             // Mặc định đơn hàng mới tạo sẽ ở trạng thái Chờ duyệt và Chưa thanh toán
             booking.setStatus("PENDING");
             booking.setPaymentStatus("UNPAID");
 
             Booking savedBooking = bookingRepository.save(booking);
-            return ResponseEntity.ok(savedBooking);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi đặt phòng: " + e.getMessage());
         }
@@ -37,8 +59,7 @@ public class BookingController {
         List<Booking> bookings = bookingRepository.findByUserId(userId);
         return ResponseEntity.ok(bookings);
     }
-    @Autowired
-    private com.homestay.backend.repository.HomestayRepository homestayRepository;
+
     // 3. API lấy danh sách đơn đặt phòng gửi tới các Homestay của một Host cụ thể
     @GetMapping("/host/{hostId}")
     public ResponseEntity<List<Booking>> getHostBookings(@PathVariable Long hostId) {
@@ -64,6 +85,7 @@ public class BookingController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
     // 5. API Thống kê doanh thu cho Host để vẽ biểu đồ
     @GetMapping("/host/{hostId}/analytics")
     public ResponseEntity<?> getHostAnalytics(@PathVariable Long hostId) {
@@ -98,6 +120,7 @@ public class BookingController {
 
         return ResponseEntity.ok(analytics);
     }
+
     // 6. API Cập nhật trạng thái thanh toán từ UNPAID sang PAID
     @PutMapping("/{bookingId}/pay")
     public ResponseEntity<?> payBooking(@PathVariable Long bookingId) {
