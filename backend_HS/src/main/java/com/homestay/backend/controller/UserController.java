@@ -2,6 +2,7 @@ package com.homestay.backend.controller;
 
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
+import com.homestay.backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,45 +20,45 @@ import java.util.UUID;
 public class UserController {
 
     @Autowired
+    private UserService userService;
+    @Autowired
     private UserRepository userRepository;
 
-    // Tiêm Bean JavaMailSender do Spring Boot tự động quản lý vào để dùng gửi mail
     @Autowired
     private JavaMailSender mailSender;
 
     // 1. API Đăng ký tài khoản
     @PostMapping("/register")
     public ResponseEntity<?> createUser(@RequestBody User user) {
-        // check email này đã tồn tại trong database chưa
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
-        if (existingUser.isPresent()) {
-            return ResponseEntity.badRequest().body("Email này đã được đăng ký sử dụng!");
+
+        try {
+
+            User savedUser = userService.register(user);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(savedUser);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
         }
-
-        // tiến hành lưu user mới vào database, nếu chưa có
-        User savedUser = userRepository.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
-
     // 2. API Đăng nhập hệ thống
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User loginRequest) {
-        // Tìm kiếm người dùng dựa trên email gửi lên từ Form
-        Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
 
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
+        User user = userService.login(loginRequest);
 
-            // So sánh mật khẩu thô trong DB với mật khẩu người dùng nhập vào
-            if (user.getPassword().equals(loginRequest.getPassword())) {
-                return ResponseEntity.ok(user); // Đăng nhập đúng, trả về thông tin user
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mật khẩu không chính xác!");
-            }
+        if (user != null) {
+            return ResponseEntity.ok(user);
         }
 
-        // Nếu không tìm thấy email trong hệ thống
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email tài khoản không tồn tại!");
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body("Email hoặc mật khẩu không chính xác!");
     }
 
     // 3. API Lấy danh sách toàn bộ User (Dùng cho Admin quản lý sau này)
@@ -90,7 +91,7 @@ public class UserController {
                         // Link dẫn về trang nhập mật khẩu mới ở Frontend (React chạy port 5173)
                         String resetLink = "http://localhost:5173/reset-password?token=" + token;
 
-                        message.setText("Xin chào " + user.getName() + ",\n\n"
+                        message.setText("Xin chào " + user.getFullName() + ",\n\n"
                                 + "Chúng tôi nhận được yêu cầu lấy lại mật khẩu cho tài khoản Luxestay của bạn.\n"
                                 + "Vui lòng click vào đường link bên dưới để tiến hành thiết lập mật khẩu mới:\n\n"
                                 + resetLink + "\n\n"
@@ -126,5 +127,52 @@ public class UserController {
         } else {
             return ResponseEntity.badRequest().body("Mã xác nhận (Token) không hợp lệ, sai cấu trúc hoặc đã hết hạn sử dụng!");
         }
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getProfile(
+            @PathVariable Long id) {
+
+        try {
+
+            User user =
+                    userService.getProfile(id);
+
+            return ResponseEntity.ok(user);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateProfile(
+            @PathVariable Long id,
+            @RequestBody User user) {
+
+        try {
+
+            User updatedUser =
+                    userService.updateProfile(
+                            id,
+                            user);
+
+            return ResponseEntity.ok(updatedUser);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(
+            @PathVariable Long id) {
+
+        userRepository.deleteById(id);
+
+        return ResponseEntity.ok("Xóa user thành công");
     }
 }

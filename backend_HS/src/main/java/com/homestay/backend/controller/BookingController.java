@@ -3,6 +3,7 @@ package com.homestay.backend.controller;
 import com.homestay.backend.entity.Booking;
 import com.homestay.backend.repository.BookingRepository;
 import com.homestay.backend.repository.HomestayRepository;
+import com.homestay.backend.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,60 +17,50 @@ import java.util.List;
 public class BookingController {
 
     @Autowired
-    private BookingRepository bookingRepository;
-
+    private BookingService bookingService;
     @Autowired
     private HomestayRepository homestayRepository;
-
+    @Autowired
+    private BookingRepository bookingRepository;
     // 1. API Đặt phòng (Đã gộp logic kiểm tra ngày tháng và chặn đặt trùng lịch)
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
+    public ResponseEntity<?> createBooking(
+            @RequestBody Booking booking) {
+
         try {
-            // Kiểm tra tính hợp lệ: Ngày Check-out phải sau ngày Check-in
-            if (booking.getCheckInDate().isAfter(booking.getCheckOutDate()) || booking.getCheckInDate().isEqual(booking.getCheckOutDate())) {
-                return ResponseEntity.badRequest().body("Ngày trả phòng (Check-out) phải sau ngày nhận phòng (Check-in)!");
-            }
 
-            // Gọi Repository để kiểm tra trùng lịch thực tế (Chống Overbooking)
-            boolean isOccupied = bookingRepository.isRoomOccupied(
-                    booking.getHomestay().getId(),
-                    booking.getCheckInDate(),
-                    booking.getCheckOutDate()
-            );
+            Booking savedBooking =
+                    bookingService.createBooking(booking);
 
-            if (isOccupied) {
-                return ResponseEntity.badRequest().body("Cảnh báo: Khoảng thời gian này đã có khách khác đặt trước và được Host duyệt. Vui lòng chọn lịch trình khác!");
-            }
-
-            // Mặc định đơn hàng mới tạo sẽ ở trạng thái Chờ duyệt và Chưa thanh toán
-            booking.setStatus("PENDING");
-            booking.setPaymentStatus("UNPAID");
-
-            Booking savedBooking = bookingRepository.save(booking);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(savedBooking);
 
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Lỗi khi đặt phòng: " + e.getMessage());
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
         }
     }
 
-    // 2. API Xem lịch sử đặt phòng của một User (Khách hàng)
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Booking>> getMyBookings(@PathVariable Long userId) {
-        List<Booking> bookings = bookingRepository.findByUserId(userId);
-        return ResponseEntity.ok(bookings);
+    public ResponseEntity<List<Booking>> getMyBookings(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                bookingService.getBookingsByUser(userId)
+        );
     }
 
     // 3. API lấy danh sách đơn đặt phòng gửi tới các Homestay của một Host cụ thể
     @GetMapping("/host/{hostId}")
-    public ResponseEntity<List<Booking>> getHostBookings(@PathVariable Long hostId) {
-        // Lấy toàn bộ bookings, sau đó lọc ra những đơn có homestay thuộc về hostId này
-        List<Booking> allBookings = bookingRepository.findAll();
-        List<Booking> hostBookings = allBookings.stream()
-                .filter(b -> b.getHomestay() != null && b.getHomestay().getUser() != null
-                        && b.getHomestay().getUser().getId().equals(hostId))
-                .toList();
-        return ResponseEntity.ok(hostBookings);
+    public ResponseEntity<List<Booking>> getHostBookings(
+            @PathVariable Long hostId) {
+
+        return ResponseEntity.ok(
+                bookingService.getHostBookings(hostId)
+        );
     }
 
     // 4. API cập nhật trạng thái đơn hàng (Duyệt hoặc Hủy)
@@ -77,59 +68,74 @@ public class BookingController {
     public ResponseEntity<?> updateBookingStatus(
             @PathVariable Long bookingId,
             @RequestParam String status) {
-        return bookingRepository.findById(bookingId)
-                .map(booking -> {
-                    booking.setStatus(status); // Gán trạng thái mới: CONFIRMED hoặc CANCELLED
-                    bookingRepository.save(booking);
-                    return ResponseEntity.ok("Cập nhật trạng thái đơn hàng thành công!");
-                })
-                .orElse(ResponseEntity.notFound().build());
+
+        try {
+
+            String result =
+                    bookingService.updateBookingStatus(
+                            bookingId,
+                            status);
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
     }
 
     // 5. API Thống kê doanh thu cho Host để vẽ biểu đồ
     @GetMapping("/host/{hostId}/analytics")
-    public ResponseEntity<?> getHostAnalytics(@PathVariable Long hostId) {
-        // Lấy toàn bộ các đơn đặt phòng đã được xác nhận của Host này
-        List<Booking> confirmedBookings = bookingRepository.findAll().stream()
-                .filter(b -> b.getHomestay() != null
-                        && b.getHomestay().getUser() != null
-                        && b.getHomestay().getUser().getId().equals(hostId)
-                        && "CONFIRMED".equals(b.getStatus()))
-                .toList();
+    public ResponseEntity<?> getHostAnalytics(
+            @PathVariable Long hostId) {
 
-        // Tính tổng doanh thu
-        double totalRevenue = confirmedBookings.stream()
-                .mapToDouble(Booking::getTotalPrice)
-                .sum();
-
-        // Đếm tổng số đơn đặt phòng thành công
-        int totalBookings = confirmedBookings.size();
-
-        // Tạo một Map để gói dữ liệu trả về cho Frontend
-        java.util.Map<String, Object> analytics = new java.util.HashMap<>();
-        analytics.put("totalRevenue", totalRevenue);
-        analytics.put("totalBookings", totalBookings);
-
-        // Dữ liệu giả lập theo tháng để vẽ biểu đồ cột (Tháng 1 -> Tháng 6)
-        analytics.put("monthlyLabels", java.util.Arrays.asList("Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6"));
-        analytics.put("monthlyData", java.util.Arrays.asList(totalRevenue * 0.1, totalRevenue * 0.15, totalRevenue * 0.2, totalRevenue * 0.12, totalRevenue * 0.18, totalRevenue));
-
-        // Dữ liệu theo danh mục phòng để vẽ biểu đồ tròn (Ví dụ: Villa, Căn hộ, Nhà gỗ)
-        analytics.put("categoryLabels", java.util.Arrays.asList("Căn hộ (Apartment)", "Biệt thự (Villa)", "Nhà gỗ (Bungalow)"));
-        analytics.put("categoryData", java.util.Arrays.asList(totalRevenue * 0.4, totalRevenue * 0.45, totalRevenue * 0.15));
-
-        return ResponseEntity.ok(analytics);
+        return ResponseEntity.ok(
+                bookingService.getHostAnalytics(hostId)
+        );
     }
 
     // 6. API Cập nhật trạng thái thanh toán từ UNPAID sang PAID
     @PutMapping("/{bookingId}/pay")
-    public ResponseEntity<?> payBooking(@PathVariable Long bookingId) {
-        return bookingRepository.findById(bookingId)
-                .map(booking -> {
-                    booking.setPaymentStatus("PAID"); // Đổi thành Đã thanh toán
-                    bookingRepository.save(booking);
-                    return ResponseEntity.ok("Thanh toán đơn hàng thành công!");
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> payBooking(
+            @PathVariable Long bookingId) {
+
+        try {
+
+            String result =
+                    bookingService.payBooking(bookingId);
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+    @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        return ResponseEntity.ok(
+                bookingService.getAllBookings()
+        );
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteBooking(
+            @PathVariable Long id) {
+
+        bookingRepository.deleteById(id);
+
+        return ResponseEntity.ok(
+                "Xóa booking thành công"
+        );
+    }
+    @GetMapping("/admin/revenue")
+    public ResponseEntity<Double> getRevenue() {
+
+        return ResponseEntity.ok(
+                bookingService.getTotalRevenue()
+        );
     }
 }

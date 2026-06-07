@@ -33,7 +33,7 @@ function Profile() {
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm("Bạn chắc chắn muốn hủy yêu cầu đặt phòng này?")) return;
     try {
-      await axios.put(`http://localhost:8080/api/bookings/${bookingId}/status?status=${CANCELLED}`);
+      await axios.put(`http://localhost:8080/api/bookings/${bookingId}/status?status=CANCELLED`);
       alert("Hủy đơn thành công!");
       fetchMyBookings(currentUser.id);
     } catch (error) { console.error(error); }

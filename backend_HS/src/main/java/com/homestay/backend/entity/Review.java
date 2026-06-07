@@ -10,7 +10,7 @@ public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private Integer rating;
     private String comment;
     private String userName; // Lưu nhanh tên người bình luận công khai
 

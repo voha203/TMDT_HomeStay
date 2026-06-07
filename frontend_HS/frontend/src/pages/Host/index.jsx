@@ -11,12 +11,14 @@ function Host() {
   const [isEditing, setIsEditing] = useState(false); // Trạng thái đang sửa hay đang thêm mới
   const [editId, setEditId] = useState(null);
 
+  // Thêm trường amenities vào object state chung của homestay
   const [homestay, setHomestay] = useState({
     title: "",
     description: "",
     price: "",
     location: "",
     image: "",
+    amenities: "", // Thêm ở đây để đồng bộ với hàm handleChange
   });
 
   useEffect(() => {
@@ -57,7 +59,7 @@ function Host() {
     } catch (error) { console.error(error); }
   };
 
-  // Kích hoạt chế độ sửa: Điền ngược dữ liệu cũ vào các ô Input
+  // Kích hoạt chế độ sửa: Điền ngược dữ liệu cũ bao gồm cả amenities vào ô Input
   const handleEditClick = (item) => {
     setIsEditing(true);
     setEditId(item.id);
@@ -67,6 +69,7 @@ function Host() {
       price: item.price,
       location: item.location,
       image: item.image,
+      amenities: item.amenities || "", // Đổ dữ liệu tiện nghi cũ ra form sửa (nếu có)
     });
   };
 
@@ -88,11 +91,11 @@ function Host() {
     e.preventDefault();
     try {
       if (isEditing) {
-        // Nếu đang sửa -> Gọi API PUT
+        // Nếu đang sửa -> Gọi API PUT gửi đi nguyên object homestay đã tích hợp amenities
         await axios.put(`http://localhost:8080/api/homestays/${editId}`, homestay);
         alert("Cập nhật thông tin homestay thành công!");
       } else {
-        // Nếu thêm mới -> Gọi API POST
+        // Nếu thêm mới -> Gọi API POST gửi đi nguyên object homestay đã tích hợp amenities
         await axios.post(`http://localhost:8080/api/homestays/user/${user.id}`, homestay);
         alert("Đăng bài thành công!");
       }
@@ -130,6 +133,20 @@ function Host() {
               <label className="block font-semibold text-gray-700 mb-1">Link hình ảnh</label>
               <input type="text" name="image" value={homestay.image} required placeholder="URL ảnh..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" onChange={handleChange} />
             </div>
+
+            {/* ================= THÊM KHU VỰC NHẬP TIỆN NGHI TẠI ĐÂY ================= */}
+            <div>
+              <label className="block font-semibold text-gray-700 mb-1">Tiện nghi</label>
+              <textarea
+                name="amenities"
+                value={homestay.amenities}
+                rows="3"
+                placeholder="Wifi, Hồ bơi, BBQ, Điều hòa..."
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20 resize-none"
+                onChange={handleChange}
+              />
+            </div>
+
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Mô tả chi tiết phòng</label>
               <textarea name="description" value={homestay.description} required rows="4" placeholder="Thông tin phòng..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20 resize-none" onChange={handleChange} />

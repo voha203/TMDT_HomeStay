@@ -30,4 +30,7 @@ public class Booking {
 
     // Trạng thái thanh toán: UNPAID (Chưa thanh toán), PAID (Đã thanh toán)
     private String paymentStatus;
+
+    // Số lượng khách đặt phòng (Đã được chuyển xuống đây)
+    private Integer guests;
 }

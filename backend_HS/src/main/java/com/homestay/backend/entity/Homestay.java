@@ -23,6 +23,10 @@ public class Homestay {
 
     private String image;
 
+    private String category;
+    @Column(length = 1000)
+    private String amenities;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;

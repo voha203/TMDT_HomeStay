@@ -13,9 +13,14 @@ function HomestayDetail() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [totalNights, setTotalNights] = useState(0);
 
-  // CÁC STATE MỚI PHỤC VỤ CHO REVIEW
+  // BƯỚC 6: THÊM STATE SỐ LƯỢNG KHÁCH
+  const [guests, setGuests] = useState(1);
+
+  // CÁC STATE PHỤC VỤ CHO REVIEW
   const [reviews, setReviews] = useState([]);
   const [newComment, setNewComment] = useState("");
+  // Thêm state chọn số sao mặc định là 5
+  const [rating, setRating] = useState(5);
 
   useEffect(() => {
     fetchHomestay();
@@ -48,7 +53,7 @@ function HomestayDetail() {
     }
   };
 
-  // HÀM LẤY REVIEW (MỚI)
+  // HÀM LẤY REVIEW
   const fetchReviews = async () => {
     try {
       const response = await axios.get(`http://localhost:8080/api/reviews/homestay/${id}`);
@@ -58,7 +63,7 @@ function HomestayDetail() {
     }
   };
 
-  // HÀM SUBMIT REVIEW (MỚI)
+  // HÀM SUBMIT REVIEW
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem("user"));
@@ -83,20 +88,23 @@ function HomestayDetail() {
         return;
       }
 
-      // 3. Nếu thỏa mãn thì tiến hành gửi bình luận như cũ
+      // 3. Tiến hành gửi bình luận kèm số sao chọn từ dropdown
       await axios.post("http://localhost:8080/api/reviews", {
         comment: newComment,
         userName: user.name,
+        rating: rating, // Gửi rating lên backend
         homestay: { id: id }
       });
+      
       setNewComment("");
+      setRating(5); // Reset số sao về 5 sau khi gửi thành công
       fetchReviews();
     } catch (error) {
       console.error(error);
     }
   };
 
-  // HÀM ĐẶT PHÒNG (ĐÃ SỬA BẮT LỖI)
+  // HÀM ĐẶT PHÒNG
   const handleBooking = async (e) => {
     e.preventDefault();
 
@@ -113,12 +121,14 @@ function HomestayDetail() {
       return;
     }
 
+    // BƯỚC 7: THÊM GUESTS VÀO PAYLOAD GỬI ĐI
     const bookingPayload = {
       checkInDate: checkInDate,   // Chuỗi định dạng YYYY-MM-DD
       checkOutDate: checkOutDate, // Chuỗi định dạng YYYY-MM-DD
       homestay: { id: homestay.id },
       user: { id: user.id },
       totalPrice: totalPrice,
+      guests: guests // Truyền số lượng khách xuống backend
     };
 
     try {
@@ -134,7 +144,6 @@ function HomestayDetail() {
 
       if (error.response && error.response.data) {
         const errorData = error.response.data;
-        // Bẻ khóa cấu hình nếu Backend trả về Object thông tin lỗi thay vì String
         if (typeof errorData === "object" && errorData !== null) {
           alert("❌ " + (errorData.message || JSON.stringify(errorData)));
         } else {
@@ -166,14 +175,50 @@ function HomestayDetail() {
             <h3 className="text-xl font-bold text-gray-800 mb-3">Mô tả không gian</h3>
             <p className="text-gray-600 leading-relaxed whitespace-pre-line mb-8">{homestay.description}</p>
             
+            {/* HIỂN THỊ TIỆN NGHI NGAY DƯỚI MÔ TẢ */}
+            <hr className="border-gray-100 my-8" />
+
+            <h3 className="text-xl font-bold text-gray-800 mb-3">
+              Tiện nghi
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
+              {homestay.amenities
+                ?.split(",")
+                .map((item, index) => (
+                  <div
+                    key={index}
+                    className="bg-blue-50 text-blue-900 px-4 py-2 rounded-xl text-sm font-semibold"
+                  >
+                    ✅ {item.trim()}
+                  </div>
+                ))}
+            </div>
+
             <hr className="border-gray-100 my-8" />
 
             {/* KHU VỰC ĐÁNH GIÁ VÀ BÌNH LUẬN */}
             <div className="space-y-6">
-              <h3 className="text-2xl font-black text-gray-950">Đánh giá từ cộng đồng ({reviews.length})</h3>
+              <h3 className="text-2xl font-black text-gray-900">Đánh giá từ cộng đồng ({reviews.length})</h3>
               
               {/* Form viết bình luận */}
               <form onSubmit={handleReviewSubmit} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-gray-700">Đánh giá của bạn:</span>
+                  {/* Form review dropdown chọn số sao */}
+                  <select
+                    value={rating}
+                    onChange={(e) => setRating(parseInt(e.target.value))}
+                    className="border p-2 rounded-xl bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-900/20"
+                  >
+                    <option value="1">⭐ 1</option>
+                    <option value="2">⭐ 2</option>
+                    <option value="3">⭐ 3</option>
+                    <option value="4">⭐ 4</option>
+                    <option value="5">⭐ 5</option>
+                  </select>
+                </div>
+
                 <textarea
                   className="w-full border border-gray-200 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 transition resize-none"
                   rows="3"
@@ -193,7 +238,13 @@ function HomestayDetail() {
                 ) : (
                   reviews.map((r) => (
                     <div key={r.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="font-bold text-gray-900 text-sm">👤 {r.userName}</div>
+                      <div className="flex justify-between items-center">
+                        <div className="font-bold text-gray-900 text-sm">👤 {r.userName}</div>
+                        {/* Hiển thị số sao r.rating lặp lại icon ⭐ */}
+                        <div className="text-yellow-500 text-xs font-bold bg-amber-50 px-2 py-1 rounded-lg">
+                          {"⭐".repeat(r.rating || 5)}
+                        </div>
+                      </div>
                       <div className="text-gray-600 text-sm mt-1">{r.comment}</div>
                     </div>
                   ))
@@ -220,6 +271,21 @@ function HomestayDetail() {
             <div>
               <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Check-out</label>
               <input type="date" className="w-full focus:outline-none text-sm text-gray-700 cursor-pointer" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} />
+            </div>
+
+            <hr className="border-gray-200" />
+            <div>
+              <label className="block text-xs font-bold uppercase text-gray-700 mb-1">
+                Số khách
+              </label>
+
+              <input
+                type="number"
+                min="1"
+                value={guests}
+                onChange={(e) => setGuests(e.target.value)}
+                className="w-full border rounded-xl p-2"
+              />
             </div>
           </div>
 
