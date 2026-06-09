@@ -55,6 +55,7 @@ public class HomestayService {
             homestay.setLocation(newHomestay.getLocation());
             homestay.setAmenities(newHomestay.getAmenities());
             homestay.setImage(newHomestay.getImage());
+            homestay.setCategory(newHomestay.getCategory());
 
             homestayRepository.save(homestay);
 

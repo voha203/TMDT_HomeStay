@@ -43,7 +43,7 @@ function Navbar() {
               </Link>
 
               <span className="text-sm bg-blue-50 text-blue-900 px-3 py-1.5 rounded-full font-semibold">
-                👋 {user.name} ({user.role})
+                👋 {user.fullName} ({user.role})
               </span>
               
               <button

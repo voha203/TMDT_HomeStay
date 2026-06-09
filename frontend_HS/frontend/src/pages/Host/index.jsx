@@ -19,6 +19,7 @@ function Host() {
     location: "",
     image: "",
     amenities: "", // Thêm ở đây để đồng bộ với hàm handleChange
+    category: "Apartment", // Loại hình homestay phục vụ cho bộ lọc ở trang chủ
   });
 
   useEffect(() => {
@@ -70,6 +71,7 @@ function Host() {
       location: item.location,
       image: item.image,
       amenities: item.amenities || "", // Đổ dữ liệu tiện nghi cũ ra form sửa (nếu có)
+      category: item.category || "Apartment",
     });
   };
 
@@ -134,6 +136,15 @@ function Host() {
               <input type="text" name="image" value={homestay.image} required placeholder="URL ảnh..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" onChange={handleChange} />
             </div>
 
+            <div>
+              <label className="block font-semibold text-gray-700 mb-1">Loại hình</label>
+              <select name="category" value={homestay.category} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" onChange={handleChange}>
+                <option value="Apartment">🏢 Căn hộ (Apartment)</option>
+                <option value="Villa">🏡 Biệt thự (Villa)</option>
+                <option value="Bungalow">🪵 Nhà gỗ (Bungalow)</option>
+              </select>
+            </div>
+
             {/* ================= THÊM KHU VỰC NHẬP TIỆN NGHI TẠI ĐÂY ================= */}
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Tiện nghi</label>
@@ -191,7 +202,7 @@ function Host() {
                       <tr key={booking.id} className="hover:bg-gray-50/50 transition">
                         <td className="p-4 pl-6 font-bold text-blue-900">#BK-{booking.id}</td>
                         <td className="p-4">
-                          <div className="font-bold text-gray-900">{booking.user?.name}</div>
+                          <div className="font-bold text-gray-900">{booking.user?.fullName}</div>
                           <div className="text-gray-400 text-xs">{booking.user?.email}</div>
                         </td>
                         <td className="p-4 font-semibold text-gray-900">{booking.homestay?.title}</td>

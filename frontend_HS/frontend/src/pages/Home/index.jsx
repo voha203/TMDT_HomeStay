@@ -357,8 +357,6 @@ function Home() {
         </section>
 
       </main>
-
-      <Navbar />
     </div>
   );
 }

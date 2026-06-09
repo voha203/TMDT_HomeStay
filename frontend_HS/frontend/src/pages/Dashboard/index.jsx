@@ -64,7 +64,7 @@ function Dashboard() {
         <div className="p-6 border-b border-gray-200 bg-white rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-950">Báo cáo & Thống kê Hệ thống</h1>
-            <p className="text-gray-500 text-sm mt-1">Xin chào quản trị: <span className="text-blue-900 font-bold">{currentUser?.name}</span></p>
+            <p className="text-gray-500 text-sm mt-1">Xin chào quản trị: <span className="text-blue-900 font-bold">{currentUser?.fullName}</span></p>
           </div>
           <div className="flex gap-6">
             <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
@@ -111,7 +111,7 @@ function Dashboard() {
                   {allUsers.map((u) => (
                     <tr key={u.id} className="hover:bg-gray-50/30 transition">
                       <td className="p-4 pl-6 font-bold text-gray-400">#USR-{u.id}</td>
-                      <td className="p-4 font-bold text-gray-900">{u.name}</td>
+                      <td className="p-4 font-bold text-gray-900">{u.fullName}</td>
                       <td className="p-4 font-semibold">{u.email}</td>
                       <td className="p-4 pr-6">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-black tracking-wide ${

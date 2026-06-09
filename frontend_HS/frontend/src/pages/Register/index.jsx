@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
-  const [user, setUser] = useState({ name: "", email: "", password: "", role: "USER" });
+  const [user, setUser] = useState({ fullName: "", email: "", password: "", role: "USER" });
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -34,7 +34,7 @@ function Register() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Họ và tên</label>
             <input
               type="text"
-              name="name"
+              name="fullName"
               required
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 transition"
               placeholder="Nguyễn Văn A"

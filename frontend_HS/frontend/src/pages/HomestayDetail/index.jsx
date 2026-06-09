@@ -91,7 +91,7 @@ function HomestayDetail() {
       // 3. Tiến hành gửi bình luận kèm số sao chọn từ dropdown
       await axios.post("http://localhost:8080/api/reviews", {
         comment: newComment,
-        userName: user.name,
+        userName: user.fullName,
         rating: rating, // Gửi rating lên backend
         homestay: { id: id }
       });

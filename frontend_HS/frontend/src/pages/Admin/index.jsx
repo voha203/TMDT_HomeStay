@@ -5,27 +5,29 @@ import Navbar from "../../components/Navbar";
 function Admin() {
   // 1. Lấy thông tin user từ localStorage và kiểm tra quyền ngay đầu component
   const user = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = !!user && user.role === "ADMIN";
 
-  if (!user || user.role !== "ADMIN") {
-    return (
-      <div className="text-center py-20 text-red-500 font-semibold text-xl">
-        Bạn không có quyền truy cập trang này.
-      </div>
-    );
-  }
-
-  // 2. Nếu là ADMIN thì mới chạy tiếp các logic bên dưới
+  // 2. Khai báo state ở mức top-level để tuân thủ Rules of Hooks
   const [users, setUsers] = useState([]);
   const [homestays, setHomestays] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [revenue, setRevenue] = useState(0);
 
   useEffect(() => {
+    if (!isAdmin) return;
     fetchUsers();
     fetchHomestays();
     fetchBookings();
     fetchRevenue();
-  }, []);
+  }, [isAdmin]);
+
+  if (!isAdmin) {
+    return (
+      <div className="text-center py-20 text-red-500 font-semibold text-xl">
+        Bạn không có quyền truy cập trang này.
+      </div>
+    );
+  }
 
   const fetchUsers = async () => {
     const res = await axios.get("http://localhost:8080/api/users");
@@ -164,7 +166,7 @@ function Admin() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td className="p-4">{user.id}</td>
-                  <td className="p-4">{user.name}</td>
+                  <td className="p-4">{user.fullName}</td>
                   <td className="p-4">{user.email}</td>
                   <td className="p-4">{user.role}</td>
                   <td className="p-4 text-center">
@@ -204,7 +206,7 @@ function Admin() {
                   <td className="p-4">{item.title}</td>
                   <td className="p-4">{item.location}</td>
                   <td className="p-4">{item.price?.toLocaleString()}</td>
-                  <td className="p-4">{item.user?.name}</td>
+                  <td className="p-4">{item.user?.fullName}</td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => deleteHomestay(item.id)}
@@ -239,7 +241,7 @@ function Admin() {
               {bookings.map((item) => (
                 <tr key={item.id}>
                   <td className="p-4">{item.id}</td>
-                  <td className="p-4">{item.user?.name}</td>
+                  <td className="p-4">{item.user?.fullName}</td>
                   <td className="p-4">{item.homestay?.title}</td>
                   <td className="p-4">{item.totalPrice?.toLocaleString()}</td>
                   <td className="p-4">{item.status}</td>
