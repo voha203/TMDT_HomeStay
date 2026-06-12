@@ -1,7 +1,6 @@
 package com.homestay.backend.controller;
 
 import com.homestay.backend.entity.Review;
-import com.homestay.backend.repository.ReviewRepository;
 import com.homestay.backend.service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

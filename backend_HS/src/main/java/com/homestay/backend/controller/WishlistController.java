@@ -1,17 +1,13 @@
 package com.homestay.backend.controller;
 
 import com.homestay.backend.entity.Wishlist;
-import com.homestay.backend.entity.User;
-import com.homestay.backend.entity.Homestay;
-import com.homestay.backend.repository.WishlistRepository;
+import com.homestay.backend.service.WishlistService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import com.homestay.backend.service.WishlistService;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/wishlist")
