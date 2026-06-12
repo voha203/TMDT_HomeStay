@@ -1,8 +1,11 @@
 package com.homestay.backend.controller;
 
+import com.homestay.backend.dto.UpdateProfileRequest;
+import com.homestay.backend.dto.UserProfileResponse;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
 import com.homestay.backend.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +49,7 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
+
     // 2. API Đăng nhập hệ thống
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User loginRequest) {
@@ -128,16 +132,15 @@ public class UserController {
             return ResponseEntity.badRequest().body("Mã xác nhận (Token) không hợp lệ, sai cấu trúc hoặc đã hết hạn sử dụng!");
         }
     }
+
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProfile(
-            @PathVariable Long id) {
+    public ResponseEntity<?> getProfile(@PathVariable Long id) {
 
         try {
 
-            User user =
-                    userService.getProfile(id);
+            User user = userService.getProfile(id);
 
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(UserProfileResponse.from(user));
 
         } catch (Exception e) {
 
@@ -146,19 +149,17 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProfile(
             @PathVariable Long id,
-            @RequestBody User user) {
+            @Valid @RequestBody UpdateProfileRequest request) {
 
         try {
 
-            User updatedUser =
-                    userService.updateProfile(
-                            id,
-                            user);
+            User updatedUser = userService.updateProfile(id, request);
 
-            return ResponseEntity.ok(updatedUser);
+            return ResponseEntity.ok(UserProfileResponse.from(updatedUser));
 
         } catch (Exception e) {
 
@@ -167,6 +168,7 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id) {

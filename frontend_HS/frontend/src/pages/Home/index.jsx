@@ -144,11 +144,11 @@ function Home() {
             src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600"
             className="w-full h-full object-cover"
             alt="Hero Banner"
-          />
+          />Khám phá không gian sống sang trọng và tìm thấy homestay lý tưởng cho kỳ nghỉ của bạn
           <div className="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-white text-center p-4">
             <h1 className="text-6xl font-black mb-4 tracking-tight">Luxestay</h1>
             <p className="text-2xl font-light max-w-2xl">
-              Khám phá không gian sống sang trọng và tìm thấy homestay lý tưởng cho kỳ nghỉ của bạn.
+              .
             </p>
           </div>
         </section>
