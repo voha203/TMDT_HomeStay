@@ -4,11 +4,24 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 
 const API_BASE_URL = "http://localhost:8080/api";
+const ALL_BOOKINGS_STATUS = "ALL";
 const EMPTY_PROFILE_FORM = {
   fullName: "",
   email: "",
   role: "",
 };
+const EMPTY_PASSWORD_FORM = {
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+};
+const BOOKING_FILTERS = [
+  { value: ALL_BOOKINGS_STATUS, label: "Tất cả" },
+  { value: "PENDING", label: "Chờ duyệt" },
+  { value: "CONFIRMED", label: "Đã xác nhận" },
+  { value: "CANCELLED", label: "Đã hủy" },
+  { value: "PAID", label: "Đã thanh toán" },
+];
 
 function getStoredUser() {
   return JSON.parse(localStorage.getItem("user"));
@@ -19,10 +32,12 @@ function Profile() {
   const [bookings, setBookings] = useState([]);
   const [currentUser, setCurrentUser] = useState(getStoredUser());
   const [profileForm, setProfileForm] = useState(EMPTY_PROFILE_FORM);
+  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM);
+  const [bookingStatusFilter, setBookingStatusFilter] = useState(ALL_BOOKINGS_STATUS);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
-  // State quản lý Popup thanh toán ảo
   const [showPayModal, setShowPayModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
@@ -66,9 +81,23 @@ function Profile() {
     fetchMyBookings(user.id);
   }, [navigate]);
 
+  const filteredBookings = bookings.filter((booking) => {
+    if (bookingStatusFilter === ALL_BOOKINGS_STATUS) return true;
+    if (bookingStatusFilter === "PAID") return booking.paymentStatus === "PAID";
+    return booking.status === bookingStatusFilter;
+  });
+
   const handleProfileChange = (event) => {
     const { name, value } = event.target;
     setProfileForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }));
+  };
+
+  const handlePasswordChange = (event) => {
+    const { name, value } = event.target;
+    setPasswordForm((previousForm) => ({
       ...previousForm,
       [name]: value,
     }));
@@ -108,6 +137,31 @@ function Profile() {
     }
   };
 
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!currentUser?.id) return;
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert("Mật khẩu xác nhận không trùng khớp!");
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      const response = await axios.put(`${API_BASE_URL}/users/${currentUser.id}/change-password`, {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      alert(response.data || "Đổi mật khẩu thành công!");
+      setPasswordForm(EMPTY_PASSWORD_FORM);
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data || "Đổi mật khẩu thất bại!");
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm("Bạn chắc chắn muốn hủy yêu cầu đặt phòng này?")) return;
     try {
@@ -119,19 +173,17 @@ function Profile() {
     }
   };
 
-  // Kích hoạt cổng thanh toán QR ngân hàng ảo
   const handleOpenPayment = (booking) => {
     setSelectedBooking(booking);
     setShowPayModal(true);
   };
 
-  // Thực hiện lệnh xác nhận đã chuyển tiền thành công
   const handleConfirmPayment = async () => {
     try {
       await axios.put(`${API_BASE_URL}/bookings/${selectedBooking.id}/pay`);
       alert("💳 Hệ thống đã ghi nhận cổng thanh toán! Hóa đơn số #" + selectedBooking.id + " đã hoàn tất thanh toán thành công.");
       setShowPayModal(false);
-      fetchMyBookings(currentUser.id); // Reload dữ liệu
+      fetchMyBookings(currentUser.id);
     } catch (error) {
       console.error(error);
       alert("Trục trặc cổng thanh toán!");
@@ -142,7 +194,6 @@ function Profile() {
     if (status === "CANCELLED") return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full font-semibold text-xs">Đã hủy đơn</span>;
     if (status === "PENDING") return <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full font-semibold text-xs">Chờ Host duyệt</span>;
 
-    // Nếu đơn được CONFIRMED thì xét tiếp trạng thái tiền bạc
     if (status === "CONFIRMED") {
       return (
         <div className="flex flex-col gap-1 items-start">
@@ -164,75 +215,87 @@ function Profile() {
       <Navbar />
 
       <div className="max-w-6xl mx-auto px-6 py-32 space-y-8">
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-              {(profileForm.fullName || "?").charAt(0).toUpperCase()}
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                {(profileForm.fullName || "?").charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-gray-950">Hồ sơ cá nhân</h1>
+                <p className="text-gray-500 text-sm">Xem và cập nhật thông tin tài khoản của bạn</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-black text-gray-950">Hồ sơ cá nhân</h1>
-              <p className="text-gray-500 text-sm">Xem và cập nhật thông tin tài khoản của bạn</p>
-            </div>
-          </div>
 
-          {profileLoading ? (
-            <div className="text-center py-10 text-gray-500 font-semibold">Đang tải hồ sơ...</div>
-          ) : (
-            <form onSubmit={handleProfileSubmit} className="grid md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Họ và tên</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={profileForm.fullName}
-                  required
-                  onChange={handleProfileChange}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
-                />
-              </div>
+            {profileLoading ? (
+              <div className="text-center py-10 text-gray-500 font-semibold">Đang tải hồ sơ...</div>
+            ) : (
+              <form onSubmit={handleProfileSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Họ và tên</label>
+                  <input type="text" name="fullName" value={profileForm.fullName} required onChange={handleProfileChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
+                </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={profileForm.email}
-                  required
-                  onChange={handleProfileChange}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
+                  <input type="email" name="email" value={profileForm.email} required onChange={handleProfileChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
+                </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Vai trò</label>
-                <input
-                  type="text"
-                  value={profileForm.role}
-                  disabled
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-100 text-gray-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Vai trò</label>
+                  <input type="text" value={profileForm.role} disabled className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-100 text-gray-500" />
+                </div>
 
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={profileSaving}
-                  className="w-full bg-blue-900 text-white py-2.5 rounded-xl font-bold hover:bg-blue-800 transition disabled:opacity-60 cursor-pointer"
-                >
+                <button type="submit" disabled={profileSaving} className="w-full bg-blue-900 text-white py-2.5 rounded-xl font-bold hover:bg-blue-800 transition disabled:opacity-60 cursor-pointer">
                   {profileSaving ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
+              </form>
+            )}
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h2 className="text-2xl font-black text-gray-950 mb-2">Đổi mật khẩu</h2>
+            <p className="text-gray-500 text-sm mb-6">Nhập mật khẩu hiện tại và mật khẩu mới để cập nhật bảo mật tài khoản.</p>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Mật khẩu hiện tại</label>
+                <input type="password" name="currentPassword" value={passwordForm.currentPassword} required onChange={handlePasswordChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
               </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Mật khẩu mới</label>
+                <input type="password" name="newPassword" value={passwordForm.newPassword} required minLength={6} onChange={handlePasswordChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Xác nhận mật khẩu mới</label>
+                <input type="password" name="confirmPassword" value={passwordForm.confirmPassword} required minLength={6} onChange={handlePasswordChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
+              </div>
+
+              <button type="submit" disabled={passwordSaving} className="w-full bg-orange-600 text-white py-2.5 rounded-xl font-bold hover:bg-orange-700 transition disabled:opacity-60 cursor-pointer">
+                {passwordSaving ? "Đang đổi..." : "Đổi mật khẩu"}
+              </button>
             </form>
-          )}
+          </div>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-2xl font-black text-gray-950">Lịch sử đặt phòng của tôi</h2>
+          <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-black text-gray-950">Lịch sử đặt phòng của tôi</h2>
+              <p className="text-sm text-gray-500 mt-1">Đang hiển thị {filteredBookings.length}/{bookings.length} đơn</p>
+            </div>
+
+            <select value={bookingStatusFilter} onChange={(event) => setBookingStatusFilter(event.target.value)} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-900/20">
+              {BOOKING_FILTERS.map((filter) => (
+                <option key={filter.value} value={filter.value}>{filter.label}</option>
+              ))}
+            </select>
           </div>
 
-          {bookings.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">Bạn chưa đặt phòng nào!</div>
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">Không có đơn đặt phòng phù hợp!</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -247,7 +310,7 @@ function Profile() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-600 font-medium">
-                  {bookings.map((booking) => (
+                  {filteredBookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-gray-50/50 transition">
                       <td className="p-4 pl-6 font-bold text-blue-900">#BK-{booking.id}</td>
                       <td className="p-4 font-semibold text-gray-900">{booking.homestay?.title}</td>
@@ -262,7 +325,6 @@ function Profile() {
                           <button onClick={() => handleCancelBooking(booking.id)} className="px-3 py-1.5 bg-red-50 text-red-600 font-bold rounded-lg border border-red-100 hover:bg-red-100 text-xs cursor-pointer">Hủy phòng</button>
                         )}
 
-                        {/* HIỆN NÚT THANH TOÁN KHI ĐƯỢC DUYỆT VÀ CHƯA TRẢ TIỀN */}
                         {booking.status === "CONFIRMED" && booking.paymentStatus === "UNPAID" && (
                           <button onClick={() => handleOpenPayment(booking)} className="px-3 py-1.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 shadow-md text-xs cursor-pointer">
                             💳 Thanh toán ngay
@@ -282,7 +344,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* POPUP MÔ PHỎNG CỔNG THANH TOÁN QR CODE NGÂN HÀNG */}
       {showPayModal && selectedBooking && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-gray-100">
@@ -290,11 +351,7 @@ function Profile() {
             <p className="text-xs text-gray-500">Vui lòng quét mã QR dưới đây để thực hiện thanh toán hóa đơn giá trị <span className="font-bold text-gray-900">{selectedBooking.totalPrice?.toLocaleString()} đ</span></p>
 
             <div className="bg-gray-100 p-4 rounded-2xl flex justify-center border border-gray-200">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PayBooking_ID_${selectedBooking.id}_Amount_${selectedBooking.totalPrice}`}
-                alt="QR Code Payment"
-                className="w-44 h-44 rounded-lg shadow-sm"
-              />
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PayBooking_ID_${selectedBooking.id}_Amount_${selectedBooking.totalPrice}`} alt="QR Code Payment" className="w-44 h-44 rounded-lg shadow-sm" />
             </div>
 
             <div className="text-[11px] text-gray-400 font-medium">Nội dung CK mặc định: <span className="text-gray-700 font-bold">Luxestay BK-{selectedBooking.id}</span></div>
@@ -310,7 +367,6 @@ function Profile() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

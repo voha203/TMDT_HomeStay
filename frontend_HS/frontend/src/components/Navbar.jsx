@@ -42,6 +42,10 @@ function Navbar() {
                 📜 Lịch sử đặt phòng
               </Link>
 
+              <Link to="/wishlist" className="text-gray-700 hover:text-blue-950 font-semibold text-sm transition">
+                ❤️ Yêu thích
+              </Link>
+
               <Link
                 to="/profile"
                 className="text-sm bg-blue-50 text-blue-900 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-100 transition"

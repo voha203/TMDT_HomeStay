@@ -1,5 +1,6 @@
 package com.homestay.backend.controller;
 
+import com.homestay.backend.dto.ChangePasswordRequest;
 import com.homestay.backend.dto.UpdateProfileRequest;
 import com.homestay.backend.dto.UserProfileResponse;
 import com.homestay.backend.entity.User;
@@ -163,6 +164,21 @@ public class UserController {
 
         } catch (Exception e) {
 
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/change-password")
+    public ResponseEntity<?> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        try {
+            userService.changePassword(id, request);
+            return ResponseEntity.ok("Đổi mật khẩu thành công");
+        } catch (Exception e) {
             return ResponseEntity
                     .badRequest()
                     .body(e.getMessage());

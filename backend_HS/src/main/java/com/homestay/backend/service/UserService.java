@@ -1,5 +1,6 @@
 package com.homestay.backend.service;
 
+import com.homestay.backend.dto.ChangePasswordRequest;
 import com.homestay.backend.dto.UpdateProfileRequest;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
@@ -13,6 +14,7 @@ public class UserService {
 
     private static final String EMAIL_EXISTS_MESSAGE = "Email đã tồn tại";
     private static final String USER_NOT_FOUND_MESSAGE = "Không tìm thấy người dùng";
+    private static final String CURRENT_PASSWORD_INVALID_MESSAGE = "Mật khẩu hiện tại không chính xác";
 
     @Autowired
     private UserRepository userRepository;
@@ -68,6 +70,19 @@ public class UserService {
         user.setEmail(email);
 
         return userRepository.save(user);
+    }
+
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = getProfile(userId);
+        String currentPassword = normalize(request.currentPassword());
+        String newPassword = normalize(request.newPassword());
+
+        if (!user.getPassword().equals(currentPassword)) {
+            throw new RuntimeException(CURRENT_PASSWORD_INVALID_MESSAGE);
+        }
+
+        user.setPassword(newPassword);
+        userRepository.save(user);
     }
 
     private String normalize(String value) {

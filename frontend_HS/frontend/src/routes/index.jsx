@@ -6,6 +6,7 @@ import Register from "../pages/Register";
 import Host from "../pages/Host";
 import HomestayDetail from "../pages/HomestayDetail";
 import Profile from "../pages/Profile";
+import Wishlist from "../pages/Wishlist";
 import Dashboard from "../pages/Dashboard";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
@@ -30,6 +31,8 @@ function AppRoutes() {
 
       {/* USER */}
       <Route path="/profile" element={<Profile />} />
+
+      <Route path="/wishlist" element={<Wishlist />} />
 
       {/* HOST */}
       <Route path="/host" element={<Host />} />
