@@ -24,6 +24,15 @@ public class ReviewController {
                 .getReviewsByHomestay(homestayId);
     }
 
+    @GetMapping("/homestay/{homestayId}/average")
+    public ResponseEntity<Double> getAverageRating(
+            @PathVariable Long homestayId) {
+
+        return ResponseEntity.ok(
+                reviewService.getAverageRating(homestayId)
+        );
+    }
+
     // 2. Đăng bình luận mới
 
     @PostMapping

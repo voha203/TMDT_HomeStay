@@ -40,6 +40,7 @@ function Home() {
   const [filteredHomestays, setFilteredHomestays] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedRoomIds, setLikedRoomIds] = useState([]);
+  const [ratingsMap, setRatingsMap] = useState({});
   const [searchKeyword, setSearchKeyword] = useState("");
   const [sortPrice, setSortPrice] = useState("");
   
@@ -62,8 +63,23 @@ function Home() {
   const fetchHomestays = async () => {
     try {
       const response = await axios.get("http://localhost:8080/api/homestays");
-      setAllHomestays(response.data);
-      setFilteredHomestays(response.data);
+      const homestays = response.data;
+      setAllHomestays(homestays);
+      setFilteredHomestays(homestays);
+
+      // Fetch average ratings for all homestays
+      const ratings = {};
+      await Promise.all(
+        homestays.map(async (h) => {
+          try {
+            const res = await axios.get(`http://localhost:8080/api/reviews/homestay/${h.id}/average`);
+            ratings[h.id] = res.data || 0;
+          } catch {
+            ratings[h.id] = 0;
+          }
+        })
+      );
+      setRatingsMap(ratings);
     } catch (error) {
       console.error(error);
     }
@@ -268,7 +284,7 @@ function Home() {
 
                       {/* Rating Tag */}
                       <div className="absolute bottom-5 left-5 bg-blue-900/80 backdrop-blur text-white px-3 py-1 rounded-xl text-sm font-bold flex items-center gap-1">
-                        ⭐ 4.9
+                        ⭐ {ratingsMap[room.id] ? ratingsMap[room.id].toFixed(1) : "0.0"}
                       </div>
                     </div>
 
