@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,8 @@ public class UserController {
     private UserService userService;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JavaMailSender mailSender;
@@ -117,7 +120,7 @@ public class UserController {
             User user = userOptional.get();
 
             // Cập nhật mật khẩu mới và xóa sạch mã token đi
-            user.setPassword(newPassword.trim()); // Dùng .trim() để tránh lỗi người dùng copy-paste bị thừa dấu cách
+            user.setPassword(passwordEncoder.encode(newPassword.trim()));
             user.setResetToken(null);
 
             // Lưu và ép dữ liệu đồng bộ xuống MySQL ngay lập tức (saveAndFlush)
