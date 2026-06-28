@@ -17,7 +17,7 @@ function Register() {
             fullName: user.fullName?.trim(),
             email: user.email?.trim().toLowerCase(),
             password: user.password,
-            role: "USER",
+            role: user.role
         };
 
         console.log("REGISTER DATA:", payload);

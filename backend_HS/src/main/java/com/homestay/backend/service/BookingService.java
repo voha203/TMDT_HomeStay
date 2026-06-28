@@ -90,51 +90,124 @@ public class BookingService {
     }
     public Map<String, Object> getHostAnalytics(Long hostId) {
 
-        List<Booking> confirmedBookings = bookingRepository.findAll().stream()
-                .filter(b -> b.getHomestay() != null
-                        && b.getHomestay().getUser() != null
-                        && b.getHomestay().getUser().getId().equals(hostId)
-                        && "CONFIRMED".equals(b.getStatus()))
-                .toList();
+        List<Booking> paidBookings =
+                bookingRepository.findAll()
+                        .stream()
+                        .filter(
+                                b ->
+                                        b.getHomestay() != null
+                                                &&
+                                                b.getHomestay().getUser() != null
+                                                &&
+                                                b.getHomestay()
+                                                        .getUser()
+                                                        .getId()
+                                                        .equals(hostId)
+                                                &&
+                                                "CONFIRMED".equals(
+                                                        b.getStatus()
+                                                )
+                                                &&
+                                                "PAID".equals(
+                                                        b.getPaymentStatus()
+                                                )
+                        )
+                        .toList();
 
-        double totalRevenue = confirmedBookings.stream()
-                .mapToDouble(Booking::getTotalPrice)
-                .sum();
+        Map<String, Object> analytics =
+                new HashMap<>();
 
-        int totalBookings = confirmedBookings.size();
+        double totalRevenue =
+                paidBookings
+                        .stream()
+                        .mapToDouble(
+                                Booking::getTotalPrice
+                        )
+                        .sum();
 
-        Map<String, Object> analytics = new HashMap<>();
+        analytics.put(
+                "totalRevenue",
+                totalRevenue
+        );
 
-        analytics.put("totalRevenue", totalRevenue);
-        analytics.put("totalBookings", totalBookings);
+        analytics.put(
+                "totalBookings",
+                paidBookings.size()
+        );
 
-        analytics.put("monthlyLabels",
-                Arrays.asList("Tháng 1", "Tháng 2", "Tháng 3",
-                        "Tháng 4", "Tháng 5", "Tháng 6"));
-
-        analytics.put("monthlyData",
+        analytics.put(
+                "monthlyLabels",
                 Arrays.asList(
-                        totalRevenue * 0.1,
-                        totalRevenue * 0.15,
-                        totalRevenue * 0.2,
-                        totalRevenue * 0.12,
-                        totalRevenue * 0.18,
+                        "T1",
+                        "T2",
+                        "T3",
+                        "T4",
+                        "T5",
+                        "T6"
+                )
+        );
+
+        analytics.put(
+                "monthlyData",
+                Arrays.asList(
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
                         totalRevenue
-                ));
+                )
+        );
 
-        analytics.put("categoryLabels",
-                Arrays.asList(
-                        "Căn hộ (Apartment)",
-                        "Biệt thự (Villa)",
-                        "Nhà gỗ (Bungalow)"
-                ));
+        double apartment = 0;
+        double villa = 0;
+        double bungalow = 0;
 
-        analytics.put("categoryData",
+        for (Booking b : paidBookings) {
+
+            String type =
+                    b.getHomestay()
+                            .getCategory();
+
+            if (type == null)
+                continue;
+
+            switch (type.toUpperCase()) {
+
+                case "APARTMENT":
+                    apartment +=
+                            b.getTotalPrice();
+                    break;
+
+                case "VILLA":
+                    villa +=
+                            b.getTotalPrice();
+                    break;
+
+                case "BUNGALOW":
+                    bungalow +=
+                            b.getTotalPrice();
+                    break;
+            }
+        }
+
+        analytics.put(
+                "categoryLabels",
                 Arrays.asList(
-                        totalRevenue * 0.4,
-                        totalRevenue * 0.45,
-                        totalRevenue * 0.15
-                ));
+                        "Căn hộ",
+                        "Biệt thự",
+                        "Nhà gỗ"
+                )
+        );
+
+        analytics.put(
+                "categoryData",
+                Arrays.asList(
+                        apartment,
+                        villa,
+                        bungalow
+                )
+        );
 
         return analytics;
     }
