@@ -24,10 +24,11 @@ public class FrontendRunConfig implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(FrontendRunConfig.class);
     private static final String NPM_COMMAND = "npm.cmd";
     private static final String DEV_SCRIPT = "dev";
-    private static final String DEV_HOST = "127.0.0.1";
+    private static final String DEV_HOST = "localhost";
     private static final String JUNIT_TEST_CLASS = "org.junit.jupiter.api.Test";
     private static final int DEV_PORT = 5173;
     private static final int PORT_CHECK_TIMEOUT_MILLIS = 300;
+    private static final int PORT_RETRY_SECONDS = 5;
     private static final long PROCESS_STOP_TIMEOUT_SECONDS = 3L;
     private static final Path FRONTEND_FROM_ROOT = Path.of("frontend_HS", "frontend");
     private static final Path FRONTEND_FROM_BACKEND = Path.of("..", "frontend_HS", "frontend");
@@ -57,26 +58,7 @@ public class FrontendRunConfig implements ApplicationRunner {
         if (frontendProcess == null || !frontendProcess.isAlive()) {
             return;
         }
-
-        List<ProcessHandle> childProcesses = frontendProcess.descendants().toList();
-        childProcesses.forEach(ProcessHandle::destroy);
-        frontendProcess.destroy();
-
-        try {
-            if (!frontendProcess.waitFor(PROCESS_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                childProcesses.stream()
-                        .filter(ProcessHandle::isAlive)
-                        .forEach(ProcessHandle::destroyForcibly);
-                frontendProcess.destroyForcibly();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            childProcesses.stream()
-                    .filter(ProcessHandle::isAlive)
-                    .forEach(ProcessHandle::destroyForcibly);
-            frontendProcess.destroyForcibly();
-        }
-
+        killProcessTree(frontendProcess);
         log.info("Stopped frontend dev server.");
     }
 
@@ -101,12 +83,41 @@ public class FrontendRunConfig implements ApplicationRunner {
         }
     }
 
+    private void killProcessTree(Process process) {
+        List<ProcessHandle> childProcesses = process.descendants().toList();
+        childProcesses.forEach(ProcessHandle::destroy);
+        process.destroy();
+
+        try {
+            if (!process.waitFor(PROCESS_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                childProcesses.stream()
+                        .filter(ProcessHandle::isAlive)
+                        .forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            childProcesses.stream()
+                    .filter(ProcessHandle::isAlive)
+                    .forEach(ProcessHandle::destroyForcibly);
+            process.destroyForcibly();
+        }
+    }
+
     private Optional<Path> resolveFrontendDirectory() {
-        return List.of(FRONTEND_FROM_ROOT, FRONTEND_FROM_BACKEND).stream()
-                .map(Path::toAbsolutePath)
-                .map(Path::normalize)
+        List<Path> candidatePaths = List.of(
+                Path.of("frontend_HS", "frontend").toAbsolutePath().normalize(),
+                Path.of("..", "frontend_HS", "frontend").toAbsolutePath().normalize()
+        );
+
+        return candidatePaths.stream()
                 .filter(Files::isDirectory)
+                .filter(FrontendRunConfig::hasPackageJson)
                 .findFirst();
+    }
+
+    private static boolean hasPackageJson(Path directory) {
+        return Files.exists(directory.resolve("package.json"));
     }
 
     private boolean isPortOpen(String host, int port) {
