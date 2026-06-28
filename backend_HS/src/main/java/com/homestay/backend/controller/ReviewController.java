@@ -24,7 +24,10 @@ public class ReviewController {
         return reviewService
                 .getReviewsByHomestay(homestayId);
     }
-
+    @GetMapping
+    public List<Review> getAllReviews() {
+        return reviewService.getAllReviews();
+    }
     // 2. Đăng bình luận mới
 
     @PostMapping
@@ -45,5 +48,12 @@ public class ReviewController {
                     .body("Lỗi gửi bình luận: "
                             + e.getMessage());
         }
+    }
+    @PutMapping("/{id}/reply")
+    public String replyReview(
+            @PathVariable Long id,
+            @RequestBody String reply
+    ){
+        return reviewService.replyReview(id, reply);
     }
 }

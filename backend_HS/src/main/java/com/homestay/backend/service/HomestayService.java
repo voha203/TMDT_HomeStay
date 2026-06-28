@@ -40,6 +40,7 @@ public class HomestayService {
 
         return homestayRepository.save(homestay);
     }
+
     public String updateHomestay(Long id, Homestay newHomestay) {
 
         Optional<Homestay> homestayOptional =
@@ -53,6 +54,7 @@ public class HomestayService {
             homestay.setDescription(newHomestay.getDescription());
             homestay.setPrice(newHomestay.getPrice());
             homestay.setLocation(newHomestay.getLocation());
+            homestay.setCategory(newHomestay.getCategory());
             homestay.setAmenities(newHomestay.getAmenities());
             homestay.setImage(newHomestay.getImage());
 
@@ -63,6 +65,7 @@ public class HomestayService {
 
         throw new RuntimeException("Không tìm thấy Homestay");
     }
+
     public String deleteHomestay(Long id) {
 
         if (homestayRepository.existsById(id)) {
@@ -74,16 +77,19 @@ public class HomestayService {
 
         throw new RuntimeException("Không tìm thấy Homestay");
     }
+
     public List<Homestay> searchByTitle(String keyword) {
 
         return homestayRepository
                 .findByTitleContainingIgnoreCase(keyword);
     }
+
     public List<Homestay> filterByLocation(String location) {
 
         return homestayRepository
                 .findByLocationContainingIgnoreCase(location);
     }
+
     public List<Homestay> filterByCategory(String category) {
 
         return homestayRepository

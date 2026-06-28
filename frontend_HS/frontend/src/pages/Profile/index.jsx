@@ -82,10 +82,10 @@ function Profile() {
         {currentUser && (
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 flex items-center gap-4">
             <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-              {currentUser.name.charAt(0).toUpperCase()}
+              {currentUser.fullName?.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{currentUser.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{currentUser.fulllName}</h2>
               <p className="text-gray-500 text-sm">{currentUser.email} • Vai trò: <span className="font-semibold text-blue-900">{currentUser.role}</span></p>
             </div>
           </div>

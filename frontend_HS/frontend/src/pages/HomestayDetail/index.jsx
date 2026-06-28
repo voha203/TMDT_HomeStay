@@ -7,7 +7,7 @@ function HomestayDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [homestay, setHomestay] = useState(null);
-  
+
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [totalPrice, setTotalPrice] = useState(0);
@@ -95,7 +95,7 @@ function HomestayDetail() {
         rating: rating, // Gửi rating lên backend
         homestay: { id: id }
       });
-      
+
       setNewComment("");
       setRating(5); // Reset số sao về 5 sau khi gửi thành công
       fetchReviews();
@@ -133,7 +133,7 @@ function HomestayDetail() {
 
     try {
       const response = await axios.post("http://localhost:8080/api/bookings", bookingPayload);
-      
+
       // Kiểm tra phản hồi thành công từ Backend
       if (response.status === 201 || response.status === 200) {
         alert("🎉 Đặt phòng thành công! Vui lòng chờ Host duyệt đơn.");
@@ -164,17 +164,17 @@ function HomestayDetail() {
       <Navbar />
 
       <div className="max-w-6xl mx-auto px-6 py-32 grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
+
         <div className="lg:col-span-2 space-y-6">
           <img src={homestay.image} alt="" className="w-full h-[450px] object-cover rounded-3xl shadow-md" />
-          
+
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
             <h1 className="text-4xl font-black text-gray-900 mb-4">{homestay.title}</h1>
             <p className="text-gray-500 text-lg mb-6">📍 {homestay.location}</p>
             <hr className="border-gray-100 my-6" />
             <h3 className="text-xl font-bold text-gray-800 mb-3">Mô tả không gian</h3>
             <p className="text-gray-600 leading-relaxed whitespace-pre-line mb-8">{homestay.description}</p>
-            
+
             {/* HIỂN THỊ TIỆN NGHI NGAY DƯỚI MÔ TẢ */}
             <hr className="border-gray-100 my-8" />
 
@@ -200,7 +200,7 @@ function HomestayDetail() {
             {/* KHU VỰC ĐÁNH GIÁ VÀ BÌNH LUẬN */}
             <div className="space-y-6">
               <h3 className="text-2xl font-black text-gray-900">Đánh giá từ cộng đồng ({reviews.length})</h3>
-              
+
               {/* Form viết bình luận */}
               <form onSubmit={handleReviewSubmit} className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -232,20 +232,47 @@ function HomestayDetail() {
               </form>
 
               {/* Danh sách bình luận đã đổ ra */}
+              {/* Danh sách bình luận đã đổ ra */}
               <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                 {reviews.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">Chưa có bình luận nào. Hãy là người đầu tiên để lại đánh giá!</p>
+                  <p className="text-sm text-gray-400 italic">
+                    Chưa có bình luận nào.
+                  </p>
                 ) : (
                   reviews.map((r) => (
-                    <div key={r.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div
+                      key={r.id}
+                      className="p-4 bg-gray-50 rounded-2xl border border-gray-100"
+                    >
                       <div className="flex justify-between items-center">
-                        <div className="font-bold text-gray-900 text-sm">👤 {r.userName}</div>
-                        {/* Hiển thị số sao r.rating lặp lại icon ⭐ */}
+                        <div className="font-bold text-gray-900 text-sm">
+                          👤 {r.userName}
+                        </div>
+
                         <div className="text-yellow-500 text-xs font-bold bg-amber-50 px-2 py-1 rounded-lg">
                           {"⭐".repeat(r.rating || 5)}
                         </div>
                       </div>
-                      <div className="text-gray-600 text-sm mt-1">{r.comment}</div>
+
+                      <div className="text-gray-600 text-sm mt-2">
+                        {r.comment}
+                      </div>
+
+                      {/* PHẢN HỒI HOST */}
+                      {r.reply && (
+                        <div className="mt-4 ml-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+
+                          <div className="text-xs font-black text-blue-900 mb-2">
+                            💬 Chủ Homestay phản hồi
+                          </div>
+
+                          <div className="text-sm text-gray-700">
+                            {r.reply}
+                          </div>
+
+                        </div>
+                      )}
+
                     </div>
                   ))
                 )}
