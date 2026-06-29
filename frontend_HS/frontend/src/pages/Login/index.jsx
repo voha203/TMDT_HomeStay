@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 function Login() {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -98,6 +99,9 @@ function Login() {
           >
             Đăng nhập
           </button>
+
+
+            <GoogleLoginButton />
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-8">
