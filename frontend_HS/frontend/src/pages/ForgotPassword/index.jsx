@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import Notification from "../../components/Notification.jsx";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -21,7 +22,7 @@ function ForgotPassword() {
         // Nếu Backend trả về object, ta lôi trường 'message' hoặc biến đổi thành chữ
         alert(errorData.message || JSON.stringify(errorData));
       } else {
-        alert(errorData || "Có lỗi xảy ra trong quá trình gửi mail!");
+        Notification.error(errorData || "Có lỗi xảy ra trong quá trình gửi mail!");
       }
     } finally {
       setLoading(false);

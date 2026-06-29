@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import Notification from "../../components/Notification.jsx";
 
 function Profile() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ function Profile() {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
-      alert("Bạn cần đăng nhập!");
+      Notification.error("Bạn cần đăng nhập!");
       navigate("/login");
       return;
     }
@@ -34,7 +35,7 @@ function Profile() {
     if (!window.confirm("Bạn chắc chắn muốn hủy yêu cầu đặt phòng này?")) return;
     try {
       await axios.put(`http://localhost:8080/api/bookings/${bookingId}/status?status=CANCELLED`);
-      alert("Hủy đơn thành công!");
+      Notification.success("Hủy đơn thành công!");
       fetchMyBookings(currentUser.id);
     } catch (error) { console.error(error); }
   };
@@ -49,10 +50,10 @@ function Profile() {
   const handleConfirmPayment = async () => {
     try {
       await axios.put(`http://localhost:8080/api/bookings/${selectedBooking.id}/pay`);
-      alert("💳 Hệ thống đã ghi nhận cổng thanh toán! Hóa đơn số #" + selectedBooking.id + " đã hoàn tất thanh toán thành công.");
+      Notification.success("💳 Hệ thống đã ghi nhận cổng thanh toán! Hóa đơn số #" + selectedBooking.id + " đã hoàn tất thanh toán thành công.");
       setShowPayModal(false);
       fetchMyBookings(currentUser.id); // Reload dữ liệu
-    } catch (error) { alert("Trục trặc cổng thanh toán!"); }
+    } catch (error) { Notification.error("Trục trặc cổng thanh toán!"); }
   };
 
   const renderStatusBadge = (status, payStatus) => {

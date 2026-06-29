@@ -1,6 +1,7 @@
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Notification from "./Notification.jsx";
 
 const GoogleLoginButton = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const GoogleLoginButton = () => {
             const token = credentialResponse.credential;
 
             if (!token) {
-                alert("Không lấy được Google token!");
+                Notification.error("Không lấy được Google token!");
                 return;
             }
 
@@ -20,16 +21,16 @@ const GoogleLoginButton = () => {
 
             localStorage.setItem("user", JSON.stringify(res.data));
 
-            alert("Đăng nhập Google thành công!");
+            Notification.success("Đăng nhập Google thành công!");
             navigate("/");
         } catch (error) {
             console.error("Google login error:", error);
-            alert(error.response?.data || "Đăng nhập Google thất bại!");
+            Notification.error(error.response?.data || "Đăng nhập Google thất bại!");
         }
     };
 
     const handleGoogleError = () => {
-        alert("Đăng nhập Google thất bại!");
+        Notification.error("Đăng nhập Google thất bại!");
     };
 
     return (
