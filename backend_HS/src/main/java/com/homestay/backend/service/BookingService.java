@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 @Service
 public class BookingService {
 
@@ -122,21 +123,23 @@ public class BookingService {
                         totalRevenue
                 ));
 
+        Map<String, Double> categoryRevenue = getCategoryRevenue(confirmedBookings);
+
         analytics.put("categoryLabels",
-                Arrays.asList(
-                        "Căn hộ (Apartment)",
-                        "Biệt thự (Villa)",
-                        "Nhà gỗ (Bungalow)"
-                ));
+                categoryRevenue.keySet().stream().toList());
 
         analytics.put("categoryData",
-                Arrays.asList(
-                        totalRevenue * 0.4,
-                        totalRevenue * 0.45,
-                        totalRevenue * 0.15
-                ));
+                categoryRevenue.values().stream().toList());
 
         return analytics;
+    }
+
+    private Map<String, Double> getCategoryRevenue(List<Booking> confirmedBookings) {
+        return confirmedBookings.stream()
+                .collect(Collectors.groupingBy(
+                        b -> b.getHomestay() != null ? b.getHomestay().getCategory() : "Khác",
+                        Collectors.summingDouble(Booking::getTotalPrice)
+                ));
     }
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();

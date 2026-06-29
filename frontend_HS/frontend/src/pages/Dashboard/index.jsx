@@ -85,7 +85,7 @@ function Dashboard() {
             <div className="h-80"><Bar data={barChartData} options={{ responsive: true, maintainAspectRatio: false }} /></div>
           </div>
           <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-950 mb-6">🍕 Biểu đồ tròn: Tỷ lệ doanh thu theo loại hàng hóa</h3>
+            <h3 className="text-lg font-bold text-gray-950 mb-6">🍕 Biểu đồ tròn: Tỷ lệ doanh thu theo loại nhà</h3>
             <div className="h-80"><Pie data={pieChartData} options={{ responsive: true, maintainAspectRatio: false }} /></div>
           </div>
         </div>
