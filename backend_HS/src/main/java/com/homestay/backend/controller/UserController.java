@@ -1,5 +1,6 @@
 package com.homestay.backend.controller;
 
+import com.homestay.backend.entity.GoogleLoginRequest;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
 import com.homestay.backend.service.UserService;
@@ -177,5 +178,18 @@ public class UserController {
         userRepository.deleteById(id);
 
         return ResponseEntity.ok("Xóa user thành công");
+    }
+
+//    Đăng nhập bằng google
+    @PostMapping("/google-login")
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+        try {
+            User user = userService.googleLogin(request.getToken());
+            user.setPassword(null);
+            user.setResetToken(null);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Đăng nhập Google thất bại");
+        }
     }
 }
