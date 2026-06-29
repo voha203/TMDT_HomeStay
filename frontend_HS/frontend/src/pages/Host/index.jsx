@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import Notification from "../../components/Notification.jsx";
 
 function Host() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ function Host() {
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (!loggedInUser || (loggedInUser.role !== "HOST" && loggedInUser.role !== "ADMIN")) {
-      alert("Bạn không có quyền!");
+      Notification.error("Bạn không có quyền!");
       navigate("/");
       return;
     }
@@ -95,7 +96,7 @@ function Host() {
   const submitReply = async (reviewId) => {
     try {
       if (!replyText[reviewId]?.trim()) {
-      alert("Nhập nội dung phản hồi");
+      Notification.info("Nhập nội dung phản hồi");
       return;
     }
       await axios.put(
@@ -103,7 +104,7 @@ function Host() {
         replyText[reviewId],
         { headers: { "Content-Type": "text/plain" } } // Thêm định dạng nếu truyền chuỗi raw string
       );
-      alert("Đã phản hồi!");
+      Notification.success("Đã phản hồi!");
       setReplyText({
       ...replyText,
       [reviewId]: "",
@@ -113,7 +114,7 @@ function Host() {
 
   } catch (error) {
     console.error(error);
-    alert("Không thể phản hồi");
+    Notification.error("Không thể phản hồi");
   }
 };
 
@@ -121,7 +122,7 @@ function Host() {
     if (!window.confirm("Xác nhận thay đổi trạng thái đơn hàng?")) return;
     try {
       await axios.put(`http://localhost:8080/api/bookings/${bookingId}/status?status=${newStatus}`);
-      alert("Cập nhật thành công!");
+      Notification.success("Cập nhật thành công!");
       fetchHostBookings(user.id);
     } catch (error) { console.error(error); }
   };
@@ -144,7 +145,7 @@ function Host() {
     if (!window.confirm("Bạn có chắc chắn muốn xóa vĩnh viễn căn homestay này?")) return;
     try {
       await axios.delete(`http://localhost:8080/api/homestays/${id}`);
-      alert("Xóa thành công!");
+      Notification.success("Xóa thành công!");
       fetchMyHomestays(user.id);
     } catch (error) { alert("Không thể xóa phòng này do đang có khách đặt!"); }
   };
@@ -158,10 +159,10 @@ function Host() {
     try {
       if (isEditing) {
         await axios.put(`http://localhost:8080/api/homestays/${editId}`, homestay);
-        alert("Cập nhật thông tin homestay thành công!");
+        Notification.success("Cập nhật thông tin homestay thành công!");
       } else {
         await axios.post(`http://localhost:8080/api/homestays/user/${user.id}`, homestay);
-        alert("Đăng bài thành công!");
+        Notification.success("Đăng bài thành công!");
       }
       window.location.reload();
     } catch (error) { console.error(error); }

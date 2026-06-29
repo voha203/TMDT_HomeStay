@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import Notification from "./Notification.jsx";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -6,7 +7,7 @@ function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    alert("Đã đăng xuất thành công!");
+    Notification.success("Đã đăng xuất thành công!");
     navigate("/login");
   };
 

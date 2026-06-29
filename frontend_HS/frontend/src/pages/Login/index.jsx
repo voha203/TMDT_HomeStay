@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import GoogleLoginButton from "../../components/GoogleLoginButton";
+import Notification from "../../components/Notification";
 
 function Login() {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -26,7 +27,7 @@ function Login() {
           JSON.stringify(response.data)
         );
 
-        alert("Đăng nhập thành công!");
+        Notification.success("Đăng nhập thành công");
 
         // Điều hướng theo role
         if (response.data.role === "ADMIN") {
@@ -40,13 +41,13 @@ function Login() {
         }
 
       } else {
-        alert("Sai email hoặc mật khẩu!");
+          Notification.error("Sai email hoặc mật khẩu!");
       }
 
     } catch (error) {
       console.error(error);
 
-      alert(
+        Notification.error(
         error.response?.data ||
         "Đăng nhập thất bại!"
       );

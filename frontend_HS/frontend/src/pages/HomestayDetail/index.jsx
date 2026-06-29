@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import Notification from "../../components/Notification.jsx";
 
 function HomestayDetail() {
   const { id } = useParams();
@@ -68,7 +69,7 @@ function HomestayDetail() {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
-      alert("Bạn phải đăng nhập mới bình luận được!");
+      Notification.warning("Bạn phải đăng nhập mới bình luận được!");
       return;
     }
     if (!newComment.trim()) return;
@@ -84,7 +85,7 @@ function HomestayDetail() {
       );
 
       if (!hasStayed) {
-        alert(" Chỉ những khách hàng đã đặt phòng và được Host duyệt thành công mới có quyền để lại đánh giá!");
+        Notification.warning(" Chỉ những khách hàng đã đặt phòng và được Host duyệt thành công mới có quyền để lại đánh giá!");
         return;
       }
 
@@ -111,13 +112,13 @@ function HomestayDetail() {
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (!user) {
-      alert("Bạn phải đăng nhập tài khoản trước khi đặt phòng!");
+      Notification.error("Bạn phải đăng nhập tài khoản trước khi đặt phòng!");
       navigate("/login");
       return;
     }
 
     if (totalNights <= 0) {
-      alert("Ngày trả phòng không hợp lệ!");
+      Notification.error("Ngày trả phòng không hợp lệ!");
       return;
     }
 
@@ -136,7 +137,7 @@ function HomestayDetail() {
 
       // Kiểm tra phản hồi thành công từ Backend
       if (response.status === 201 || response.status === 200) {
-        alert("🎉 Đặt phòng thành công! Vui lòng chờ Host duyệt đơn.");
+        Notification.success("🎉 Đặt phòng thành công! Vui lòng chờ Host duyệt đơn.");
         navigate("/profile");
       }
     } catch (error) {
@@ -150,7 +151,7 @@ function HomestayDetail() {
           alert("❌ " + errorData);
         }
       } else {
-        alert("❌ Đơn đặt phòng thất bại, hệ thống bận hoặc trùng lịch đặt!");
+         Notification.error("❌ Đơn đặt phòng thất bại, hệ thống bận hoặc trùng lịch đặt!");
       }
     }
   };

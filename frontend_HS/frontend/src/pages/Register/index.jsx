@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import Notification from "../../components/Notification";
 
 function Register() {
   const [user, setUser] = useState({ fullName: "", email: "", password: "", role: "USER" });
@@ -24,11 +25,11 @@ function Register() {
 
         try {
             await axios.post("http://localhost:8080/api/users/register", payload);
-            alert("Đăng ký thành công tài khoản!");
+            Notification.success("Đăng ký thành công tài khoản!");
             navigate("/login");
         } catch (error) {
             console.error(error.response?.data || error);
-            alert(error.response?.data || "Email đã tồn tại hoặc đăng ký lỗi!");
+            Notification.error(error.response?.data || "Email đã tồn tại hoặc đăng ký lỗi!");
         }
     };
 

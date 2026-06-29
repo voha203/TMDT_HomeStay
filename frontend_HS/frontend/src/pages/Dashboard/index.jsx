@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import { Bar, Pie } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from "chart.js";
+import Notification from "../../components/Notification.jsx";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -16,7 +17,7 @@ function Dashboard() {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user || (user.role !== "HOST" && user.role !== "ADMIN")) {
-      alert("Bạn không có quyền truy cập!");
+      Notification.error("Bạn không có quyền truy cập!");
       navigate("/");
       return;
     }

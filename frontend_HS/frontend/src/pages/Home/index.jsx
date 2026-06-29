@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import Notification from "../../components/Notification.jsx";
 
 // Danh sách Category
 const CATEGORIES = [
@@ -94,7 +95,7 @@ function Home() {
   const handleToggleLike = async (e, homestayId) => {
     e.preventDefault();
     if (!user) {
-      alert("⚠️ Bạn cần đăng nhập để sử dụng tính năng yêu thích!");
+      Notification.warning("⚠️ Bạn cần đăng nhập để sử dụng tính năng yêu thích!");
       return;
     }
     try {

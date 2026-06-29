@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
 import Analytics from "./Analytics";
+import Notification from "../../components/Notification.jsx";
 
 function Admin() {
   // 1. Lấy thông tin user từ localStorage và kiểm tra quyền ngay đầu component
@@ -65,7 +66,7 @@ function Admin() {
       await axios.delete(`http://localhost:8080/api/users/${id}`);
       fetchUsers();
     } catch (error) {
-      alert("Không thể xóa user");
+      Notification.warning("Không thể xóa user");
     }
   };
 
@@ -76,7 +77,7 @@ function Admin() {
       await axios.delete(`http://localhost:8080/api/homestays/${id}`);
       fetchHomestays();
     } catch (error) {
-      alert("Không thể xóa");
+      Notification.warning("Không thể xóa");
     }
   };
 
@@ -87,7 +88,7 @@ function Admin() {
       await axios.delete(`http://localhost:8080/api/bookings/${id}`);
       fetchBookings();
     } catch (error) {
-      alert("Không thể xóa booking");
+      Notification.warning("Không thể xóa booking");
     }
   };
 
