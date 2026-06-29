@@ -16,6 +16,7 @@ public class UserService {
     private static final String EMAIL_EXISTS_MESSAGE = "Email đã tồn tại";
     private static final String USER_NOT_FOUND_MESSAGE = "Không tìm thấy người dùng";
     private static final String CURRENT_PASSWORD_INVALID_MESSAGE = "Mật khẩu hiện tại không chính xác";
+    private static final String BCRYPT_PREFIX = "$2a$";
 
     @Autowired
     private UserRepository userRepository;
@@ -45,7 +46,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
-            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            if (checkPassword(loginRequest.getPassword(), user)) {
                 user.setPassword(null);
                 user.setResetToken(null);
                 return user;
@@ -80,12 +81,28 @@ public class UserService {
     public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = getProfile(userId);
 
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+        if (!checkPassword(request.currentPassword(), user)) {
             throw new RuntimeException(CURRENT_PASSWORD_INVALID_MESSAGE);
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    private boolean checkPassword(String rawPassword, User user) {
+        // BCrypt match — for new users
+        if (user.getPassword().startsWith(BCRYPT_PREFIX)) {
+            return passwordEncoder.matches(rawPassword, user.getPassword());
+        }
+
+        // Plain text match — for old users, auto-migrate to BCrypt on success
+        if (user.getPassword().equals(rawPassword)) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            userRepository.save(user);
+            return true;
+        }
+
+        return false;
     }
 
     private String normalize(String value) {
