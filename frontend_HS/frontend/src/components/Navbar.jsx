@@ -42,6 +42,12 @@ function Navbar() {
                 📜 Lịch sử đặt phòng
               </Link>
 
+              {user.role === "ADMIN" && (
+                <Link to="/admin" className="text-red-600 hover:text-red-700 font-bold text-sm transition">
+                  ⚙️ Quản trị
+                </Link>
+              )}
+
               <Link to="/wishlist" className="text-gray-700 hover:text-blue-950 font-semibold text-sm transition">
                 ❤️ Yêu thích
               </Link>

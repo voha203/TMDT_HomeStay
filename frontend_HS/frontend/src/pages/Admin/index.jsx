@@ -62,6 +62,15 @@ function Admin() {
     }
   };
 
+  const changeUserRole = async (id, newRole) => {
+    try {
+      await axios.put(`http://localhost:8080/api/users/${id}/role`, { role: newRole });
+      fetchUsers();
+    } catch (error) {
+      alert("Không thể cập nhật vai trò");
+    }
+  };
+
   // Bước 6: Hàm xóa Homestay
   const deleteHomestay = async (id) => {
     if (!window.confirm("Xóa homestay này?")) return;
@@ -168,11 +177,25 @@ function Admin() {
                   <td className="p-4">{user.id}</td>
                   <td className="p-4">{user.fullName}</td>
                   <td className="p-4">{user.email}</td>
-                  <td className="p-4">{user.role}</td>
+                  <td className="p-4">
+                    <select
+                      value={user.role}
+                      onChange={(e) => changeUserRole(user.id, e.target.value)}
+                      className={`px-2 py-1 rounded-lg text-xs font-bold border ${
+                        user.role === "ADMIN" ? "bg-red-50 text-red-800 border-red-200" :
+                        user.role === "HOST" ? "bg-purple-50 text-purple-800 border-purple-200" :
+                        "bg-blue-50 text-blue-800 border-blue-200"
+                      }`}
+                    >
+                      <option value="USER">USER</option>
+                      <option value="HOST">HOST</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
+                  </td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => deleteUser(user.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded-lg"
+                      className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs"
                     >
                       Xóa
                     </button>

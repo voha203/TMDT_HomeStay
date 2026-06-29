@@ -2,6 +2,7 @@ package com.homestay.backend.controller;
 
 import com.homestay.backend.dto.ChangePasswordRequest;
 import com.homestay.backend.dto.UpdateProfileRequest;
+import com.homestay.backend.dto.UpdateRoleRequest;
 import com.homestay.backend.dto.UserProfileResponse;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
@@ -181,6 +182,23 @@ public class UserController {
         try {
             userService.changePassword(id, request);
             return ResponseEntity.ok("Đổi mật khẩu thành công");
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/role")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateRoleRequest request) {
+
+        try {
+            User user = userService.getProfile(id);
+            user.setRole(request.role());
+            userRepository.save(user);
+            return ResponseEntity.ok("Cập nhật role thành công");
         } catch (Exception e) {
             return ResponseEntity
                     .badRequest()
