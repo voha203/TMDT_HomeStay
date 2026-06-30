@@ -17,15 +17,26 @@ function Host() {
   const [replyText, setReplyText] = useState({});
 
   // Cấu hình thuộc tính category vào state mặc định
-  const [homestay, setHomestay] = useState({
-    title: "",
-    description: "",
-    price: "",
-    location: "",
-    image: "",
-    amenities: "", 
-    category: "Villa", // Mặc định là Villa
-  });
+    const [homestay, setHomestay] = useState({
+        title: "",
+        description: "",
+        price: "",
+        location: "",
+        category: "",
+        amenities: "",
+    });
+
+    const [images, setImages] = useState([]);
+    const [previews, setPreviews] = useState([]);
+
+    const handleImagesChange = (e) => {
+        const files = Array.from(e.target.files);
+
+        setImages(files);
+
+        const previewUrls = files.map((file) => URL.createObjectURL(file));
+        setPreviews(previewUrls);
+    };
 
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
@@ -155,17 +166,49 @@ function Host() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (isEditing) {
-        await axios.put(`http://localhost:8080/api/homestays/${editId}`, homestay);
-        Notification.success("Cập nhật thông tin homestay thành công!");
-      } else {
-        await axios.post(`http://localhost:8080/api/homestays/user/${user.id}`, homestay);
-        Notification.success("Đăng bài thành công!");
+      e.preventDefault();
+
+      try {
+          const user = JSON.parse(localStorage.getItem("user"));
+
+          if (!user?.id) {
+              Notification.error("Bạn cần đăng nhập host để đăng homestay");
+              return;
+          }
+
+          if (images.length === 0) {
+              Notification.warning("Vui lòng chọn ít nhất 1 ảnh");
+              return;
+          }
+
+          const formData = new FormData();
+
+          formData.append("title", homestay.title);
+          formData.append("description", homestay.description);
+          formData.append("price", homestay.price);
+          formData.append("location", homestay.location);
+          formData.append("category", homestay.category);
+          formData.append("amenities", homestay.amenities);
+
+          images.forEach((image) => {
+              formData.append("images", image);
+          });
+
+          await axios.post(
+              `http://localhost:8080/api/homestays/user/${user.id}/with-images`,
+              formData,
+              {
+                  headers: {
+                      "Content-Type": "multipart/form-data",
+                  },
+              }
+          );
+
+          Notification.success("Đăng homestay thành công!");
+      } catch (error) {
+          console.error(error);
+          Notification.error(error.response?.data || "Đăng homestay thất bại!");
       }
-      window.location.reload();
-    } catch (error) { console.error(error); }
   };
 
   return (
@@ -195,8 +238,18 @@ function Host() {
               </div>
             </div>
             <div>
-              <label className="block font-semibold text-gray-700 mb-1">Link hình ảnh</label>
-              <input type="text" name="image" value={homestay.image} required placeholder="URL ảnh..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" onChange={handleChange} />
+              <label className="block font-semibold text-gray-700 mb-1">Tải hình ảnh</label>
+              <input type="file" accept="image/*" multiple onChange={handleImagesChange} name="image" value={homestay.image} required placeholder="Chọn ảnh..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20"/>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                    {previews.map((src, index) => (
+                        <img
+                            key={index}
+                            src={src}
+                            alt={`preview-${index}`}
+                            className="w-full h-32 object-cover rounded-lg border"
+                        />
+                    ))}
+                </div>
             </div>
 
             {/* CHỌN LOẠI HÌNH (CATEGORY) */}

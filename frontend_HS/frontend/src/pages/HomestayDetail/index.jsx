@@ -167,7 +167,24 @@ function HomestayDetail() {
       <div className="max-w-6xl mx-auto px-6 py-32 grid grid-cols-1 lg:grid-cols-3 gap-10">
 
         <div className="lg:col-span-2 space-y-6">
-          <img src={homestay.image} alt="" className="w-full h-[450px] object-cover rounded-3xl shadow-md" />
+            {homestay.images && homestay.images.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {homestay.images.map((img) => (
+                        <img
+                            key={img.id}
+                            src={img.imageUrl}
+                            alt={homestay.title}
+                            className="w-full h-56 object-cover rounded-xl"
+                        />
+                    ))}
+                </div>
+            ) : (
+                <img
+                    src={homestay.image}
+                    alt={homestay.title}
+                    className="w-full h-72 object-cover rounded-xl"
+                />
+            )}
 
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
             <h1 className="text-4xl font-black text-gray-900 mb-4">{homestay.title}</h1>
