@@ -35,6 +35,9 @@ public class BookingService {
                     "Khoảng thời gian này đã được đặt!");
         }
 
+        booking.getHomestay().setBookingCount(
+                booking.getHomestay().getBookingCount() == null ? 1 : booking.getHomestay().getBookingCount() + 1
+        );
         booking.setStatus("PENDING");
         booking.setPaymentStatus("UNPAID");
 

@@ -189,6 +189,18 @@ function HomestayDetail() {
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
             <h1 className="text-4xl font-black text-gray-900 mb-4">{homestay.title}</h1>
             <p className="text-gray-500 text-lg mb-6">📍 {homestay.location}</p>
+              {homestay.tags && homestay.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                      {homestay.tags.map((tag) => (<span
+                          key={tag.id}
+                          className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
+                                #{tag.name}
+                          </span>))}
+                  </div>
+              )}
+              <p className="text-sm text-slate-500 mt-2 rounded-50">
+                  Lượt xem: {homestay.viewCount || 0}
+              </p>
             <hr className="border-gray-100 my-6" />
             <h3 className="text-xl font-bold text-gray-800 mb-3">Mô tả không gian</h3>
             <p className="text-gray-600 leading-relaxed whitespace-pre-line mb-8">{homestay.description}</p>
@@ -212,6 +224,7 @@ function HomestayDetail() {
                   </div>
                 ))}
             </div>
+
 
             <hr className="border-gray-100 my-8" />
 
