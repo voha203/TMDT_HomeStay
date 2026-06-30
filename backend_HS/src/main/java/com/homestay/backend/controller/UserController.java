@@ -1,6 +1,7 @@
 package com.homestay.backend.controller;
 
 import com.homestay.backend.entity.GoogleLoginRequest;
+import com.homestay.backend.dto.UpdateRoleRequest;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
 import com.homestay.backend.service.UserService;
@@ -171,6 +172,24 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
+
+    @PutMapping("/{id}/role")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody UpdateRoleRequest request) {
+
+        try {
+            User user = userService.getProfile(id);
+            user.setRole(request.role());
+            userRepository.save(user);
+            return ResponseEntity.ok("Cập nhật vai trò thành công");
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id) {

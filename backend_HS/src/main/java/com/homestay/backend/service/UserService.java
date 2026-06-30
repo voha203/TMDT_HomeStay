@@ -19,6 +19,8 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    private static final String BCRYPT_PREFIX = "$2a$";
+
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -45,7 +47,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
-            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            if (checkPassword(loginRequest.getPassword(), user)) {
                 user.setPassword(null);
                 user.setResetToken(null);
                 return user;
@@ -90,6 +92,22 @@ public class UserService {
         newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
 
         return userRepository.save(newUser);
+    }
+
+    private boolean checkPassword(String rawPassword, User user) {
+        // BCrypt match — for new users
+        if (user.getPassword().startsWith(BCRYPT_PREFIX)) {
+            return passwordEncoder.matches(rawPassword, user.getPassword());
+        }
+
+        // Plain text match — for old users, auto-migrate to BCrypt on success
+        if (user.getPassword().equals(rawPassword)) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            userRepository.save(user);
+            return true;
+        }
+
+        return false;
     }
 
     public User getProfile(Long userId) {

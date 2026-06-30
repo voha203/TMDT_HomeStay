@@ -64,9 +64,20 @@ function Admin() {
     if (!window.confirm("Xóa user này?")) return;
     try {
       await axios.delete(`http://localhost:8080/api/users/${id}`);
+      Notification.success("Xóa user thành công!");
       fetchUsers();
     } catch (error) {
       Notification.warning("Không thể xóa user");
+    }
+  };
+
+  const changeUserRole = async (id, newRole) => {
+    try {
+      await axios.put(`http://localhost:8080/api/users/${id}/role`, { role: newRole });
+      Notification.success("Cập nhật vai trò thành công!");
+      fetchUsers();
+    } catch (error) {
+      Notification.warning("Không thể cập nhật vai trò");
     }
   };
 
@@ -149,7 +160,7 @@ function Admin() {
           </div>
         </div>
 
-        {/* Gọi component Analytics của bạn */}
+        {/* Gọi component Analytics (đã bao gồm stat cards + charts) */}
         <div className="mb-12">
           <Analytics
             users={users}
@@ -157,34 +168,6 @@ function Admin() {
             bookings={bookings}
             revenue={revenue}
           />
-        </div>
-
-        {/* Sửa phần Stats gồm 4 Card cao cấp */}
-        <div className="mb-6">
-          <h2 className="text-xl font-black text-blue-950 mb-4">Số liệu tổng quan</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm shadow-gray-100/50 hover:shadow-md transition-all">
-            <h3 className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-2">Tổng User</h3>
-            <p className="text-4xl font-black text-blue-950">{users.length}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm shadow-gray-100/50 hover:shadow-md transition-all">
-            <h3 className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-2">Tổng Homestay</h3>
-            <p className="text-4xl font-black text-blue-950">{homestays.length}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm shadow-gray-100/50 hover:shadow-md transition-all">
-            <h3 className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-2">Tổng Booking</h3>
-            <p className="text-4xl font-black text-blue-950">{bookings.length}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm shadow-gray-100/50 hover:shadow-md transition-all">
-            <h3 className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-2">Doanh Thu</h3>
-            <p className="text-3xl font-black text-emerald-600">
-              {revenue.toLocaleString()} <span className="text-sm font-bold">đ</span>
-            </p>
-          </div>
         </div>
 
         {/* Card Thống kê trạng thái Booking tinh tế */}
@@ -228,9 +211,19 @@ function Admin() {
                     <td className="p-4 font-bold text-blue-950">{user.fullName || "N/A"}</td>
                     <td className="p-4 text-gray-500">{user.email}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${user.role === 'ADMIN' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {user.role}
-                      </span>
+                      <select
+                        value={user.role}
+                        onChange={(e) => changeUserRole(user.id, e.target.value)}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold border ${
+                          user.role === "ADMIN" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                          user.role === "HOST" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                          "bg-gray-50 text-gray-700 border-gray-200"
+                        }`}
+                      >
+                        <option value="USER">USER</option>
+                        <option value="HOST">HOST</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
                     </td>
                     <td className="p-4 text-center">
                       <button

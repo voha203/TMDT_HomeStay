@@ -39,13 +39,27 @@ function Navbar() {
           {user ? (
             <div className="flex items-center gap-6">
               {/* Lịch sử đặt phòng dành cho mọi User đã đăng nhập */}
-              <Link to="/profile" className="hover:text-blue-900 transition">
-                Lịch sử đặt phòng
+              <Link to="/profile" className="text-gray-700 hover:text-blue-950 font-semibold text-sm transition">
+                📜 Lịch sử đặt phòng
               </Link>
 
-              <span className="text-sm bg-blue-50 text-blue-900 px-3 py-1.5 rounded-full font-semibold">
-                {user.name} ({user.role})
-              </span>
+              <Link to="/wishlist" className="text-gray-700 hover:text-blue-950 font-semibold text-sm transition">
+                ❤️ Yêu thích
+              </Link>
+
+              {user.role === "ADMIN" && (
+                <Link to="/admin" className="text-red-600 hover:text-red-700 font-bold text-sm transition">
+                  ⚙️ Quản trị
+                </Link>
+              )}
+
+              <Link
+                to="/profile"
+                className="text-sm bg-blue-50 text-blue-900 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-100 transition"
+                title="Xem hồ sơ cá nhân"
+              >
+                👋 {user.fullName} ({user.role})
+              </Link>
               
               <button
                 onClick={handleLogout}

@@ -159,55 +159,22 @@ public class BookingService {
                 )
         );
 
-        double apartment = 0;
-        double villa = 0;
-        double bungalow = 0;
+        Map<String, Double> categoryRevenue = new HashMap<>();
 
         for (Booking b : paidBookings) {
-
-            String type =
-                    b.getHomestay()
-                            .getCategory();
-
-            if (type == null)
-                continue;
-
-            switch (type.toUpperCase()) {
-
-                case "APARTMENT":
-                    apartment +=
-                            b.getTotalPrice();
-                    break;
-
-                case "VILLA":
-                    villa +=
-                            b.getTotalPrice();
-                    break;
-
-                case "BUNGALOW":
-                    bungalow +=
-                            b.getTotalPrice();
-                    break;
-            }
+            String category = b.getHomestay() != null ? b.getHomestay().getCategory() : null;
+            if (category == null) continue;
+            String label = switch (category.toUpperCase()) {
+                case "APARTMENT" -> "Căn hộ";
+                case "VILLA" -> "Biệt thự";
+                case "BUNGALOW" -> "Nhà gỗ";
+                default -> category;
+            };
+            categoryRevenue.merge(label, b.getTotalPrice(), Double::sum);
         }
 
-        analytics.put(
-                "categoryLabels",
-                Arrays.asList(
-                        "Căn hộ",
-                        "Biệt thự",
-                        "Nhà gỗ"
-                )
-        );
-
-        analytics.put(
-                "categoryData",
-                Arrays.asList(
-                        apartment,
-                        villa,
-                        bungalow
-                )
-        );
+        analytics.put("categoryLabels", categoryRevenue.keySet().stream().toList());
+        analytics.put("categoryData", categoryRevenue.values().stream().toList());
 
         return analytics;
     }
