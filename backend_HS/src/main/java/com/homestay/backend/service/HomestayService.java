@@ -2,8 +2,10 @@ package com.homestay.backend.service;
 
 import com.homestay.backend.entity.Homestay;
 import com.homestay.backend.entity.HomestayImage;
+import com.homestay.backend.entity.Tag;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.HomestayRepository;
+import com.homestay.backend.repository.TagRepository;
 import com.homestay.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,11 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.UUID;
-import java.util.List;
+import java.util.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class HomestayService {
@@ -26,6 +26,9 @@ public class HomestayService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private TagRepository tagRepository;
 
     public List<Homestay> getAllHomestays() {
         return homestayRepository.findAll();
@@ -49,7 +52,7 @@ public class HomestayService {
         return homestayRepository.save(homestay);
     }
 
-    public Homestay createHomestayWithImages(Long userId, Homestay homestay, List<String> imageUrls) {
+    public Homestay createHomestayWithImages(Long userId, Homestay homestay, List<String> imageUrls, List<Long> tagIds) {
         Optional<User> userOptional = userRepository.findById(userId);
 
         if (userOptional.isEmpty()) {
@@ -57,6 +60,11 @@ public class HomestayService {
         }
 
         homestay.setUser(userOptional.get());
+
+        if (tagIds != null && !tagIds.isEmpty()) {
+            Set<Tag> tags = new HashSet<>(tagRepository.findAllById(tagIds));
+            homestay.setTags(tags);
+        }
 
         if (imageUrls != null && !imageUrls.isEmpty()) {
             homestay.setImage(imageUrls.get(0));

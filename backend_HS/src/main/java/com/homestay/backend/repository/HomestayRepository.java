@@ -13,4 +13,12 @@ public interface HomestayRepository
     List<Homestay> findByLocationContainingIgnoreCase(String location);
 
     List<Homestay> findByCategoryIgnoreCase(String category);
+
+    List<Homestay> findTop10ByDeletedAtIsNullOrderByBookingCountDesc();
+
+    List<Homestay> findTop10ByDeletedAtIsNullOrderByCreatedAtDesc();
+
+    List<Homestay> findByDeletedAtIsNull();
+
+    List<Homestay> findTop10ByDeletedAtIsNullOrderByViewCountDesc();
 }

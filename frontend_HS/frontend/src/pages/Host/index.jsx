@@ -12,6 +12,22 @@ function Host() {
   const [isEditing, setIsEditing] = useState(false); // Trạng thái đang sửa hay đang thêm mới
   const location = useLocation();
   const [editId, setEditId] = useState(null);
+  const [tags, setTags] = useState([]);
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+
+    useEffect(() => {
+        axios.get("http://localhost:8080/api/tags")
+            .then((res) => setTags(res.data))
+            .catch((err) => console.error(err));
+    }, []);
+
+    const handleTagToggle = (tagId) => {
+        setSelectedTagIds((prev) =>
+            prev.includes(tagId)
+                ? prev.filter((id) => id !== tagId)
+                : [...prev, tagId]
+        );
+    };
 
   // Thêm các state quản lý Review theo gợi ý của bạn
   const [reviews, setReviews] = useState([]);
@@ -206,6 +222,10 @@ function Host() {
               formData.append("images", image);
           });
 
+          selectedTagIds.forEach((id) => {
+              formData.append("tagIds", id);
+          });
+
           await axios.post(
               `http://localhost:8080/api/homestays/user/${user.id}/with-images`,
               formData,
@@ -292,6 +312,29 @@ function Host() {
                 onChange={handleChange}
               />
             </div>
+
+              <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Tag nổi bật
+                  </label>
+
+                  <div className="flex flex-wrap gap-2">
+                      {tags.map((tag) => (
+                          <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => handleTagToggle(tag.id)}
+                              className={`px-3 py-2 rounded-full text-sm border transition ${
+                                  selectedTagIds.includes(tag.id)
+                                      ? "bg-blue-600 text-white border-blue-600"
+                                      : "bg-white text-slate-700 border-slate-300 hover:border-blue-400"
+                              }`}
+                          >
+                              {tag.name}
+                          </button>
+                      ))}
+                  </div>
+              </div>
 
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Mô tả chi tiết phòng</label>

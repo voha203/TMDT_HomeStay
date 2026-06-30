@@ -36,11 +36,15 @@ public class HomestayController {
 
     // 2. Lấy chi tiết 1 homestay khi click từ trang chủ
     @GetMapping("/{id}")
-    public ResponseEntity<Homestay> getHomestayById(
-            @PathVariable Long id) {
-
-        return homestayService.getHomestayById(id)
-                .map(ResponseEntity::ok)
+    public ResponseEntity<?> getHomestayById(@PathVariable Long id) {
+        return homestayRepository.findById(id)
+                .map(homestay -> {
+                    homestay.setViewCount(
+                            homestay.getViewCount() == null ? 1 : homestay.getViewCount() + 1
+                    );
+                    homestayRepository.save(homestay);
+                    return ResponseEntity.ok(homestay);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -137,7 +141,8 @@ public class HomestayController {
             @RequestParam String location,
             @RequestParam String category,
             @RequestParam String amenities,
-            @RequestParam("images") List<MultipartFile> images
+            @RequestParam("images") List<MultipartFile> images,
+            @RequestParam(value = "tagIds", required = false) List<Long> tagIds
     ) {
         try {
             List<String> imageUrls = new ArrayList<>();
@@ -169,7 +174,7 @@ public class HomestayController {
             homestay.setCategory(category);
             homestay.setAmenities(amenities);
 
-            Homestay saved = homestayService.createHomestayWithImages(userId, homestay, imageUrls);
+            Homestay saved = homestayService.createHomestayWithImages(userId, homestay, imageUrls, tagIds);
 
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
@@ -197,5 +202,20 @@ public class HomestayController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/best-sellers")
+    public List<Homestay> getBestSellers() {
+        return homestayRepository.findTop10ByDeletedAtIsNullOrderByBookingCountDesc();
+    }
+
+    @GetMapping("/newest")
+    public List<Homestay> getNewestHomestays() {
+        return homestayRepository.findTop10ByDeletedAtIsNullOrderByCreatedAtDesc();
+    }
+
+    @GetMapping("/most-viewed")
+    public List<Homestay> getMostViewed() {
+        return homestayRepository.findTop10ByDeletedAtIsNullOrderByViewCountDesc();
     }
 }
