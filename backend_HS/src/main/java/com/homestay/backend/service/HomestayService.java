@@ -7,6 +7,13 @@ import com.homestay.backend.repository.HomestayRepository;
 import com.homestay.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+import java.util.List;
 
 import java.util.List;
 import java.util.Optional;
@@ -118,6 +125,67 @@ public class HomestayService {
 
         return homestayRepository
                 .findByCategoryIgnoreCase(category);
+    }
+
+    public Homestay updateHomestayWithImages(
+            Long id,
+            String title,
+            String description,
+            Double price,
+            String location,
+            String category,
+            String amenities,
+            List<MultipartFile> images
+    ) {
+        Homestay homestay = homestayRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy homestay"));
+
+        homestay.setTitle(title);
+        homestay.setDescription(description);
+        homestay.setPrice(price);
+        homestay.setLocation(location);
+        homestay.setCategory(category);
+        homestay.setAmenities(amenities);
+
+        if (images != null && !images.isEmpty()) {
+            homestay.getImages().clear();
+
+            try {
+                Path uploadPath = Paths.get("uploads/homestays");
+                Files.createDirectories(uploadPath);
+
+                for (MultipartFile file : images) {
+                    if (!file.isEmpty()) {
+                        String originalName = file.getOriginalFilename();
+                        String extension = originalName != null && originalName.contains(".")
+                                ? originalName.substring(originalName.lastIndexOf("."))
+                                : "";
+
+                        String fileName = UUID.randomUUID() + extension;
+                        Path filePath = uploadPath.resolve(fileName);
+
+                        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                        String imageUrl = "http://localhost:8080/uploads/homestays/" + fileName;
+
+                        HomestayImage img = new HomestayImage();
+                        img.setImageUrl(imageUrl);
+                        img.setHomestay(homestay);
+
+                        homestay.getImages().add(img);
+                    }
+                }
+
+                if (!homestay.getImages().isEmpty()) {
+                    homestay.setImage(homestay.getImages().get(0).getImageUrl());
+                }
+
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi khi upload ảnh: " + e.getMessage());
+            }
+        }
+
+        return homestayRepository.save(homestay);
     }
 
 }

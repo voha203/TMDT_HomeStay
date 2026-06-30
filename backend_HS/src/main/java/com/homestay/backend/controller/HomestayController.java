@@ -176,4 +176,26 @@ public class HomestayController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping(value = "/{id}/with-images", consumes = "multipart/form-data")
+    public ResponseEntity<?> updateHomestayWithImages(
+            @PathVariable Long id,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam Double price,
+            @RequestParam String location,
+            @RequestParam String category,
+            @RequestParam String amenities,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images
+    ) {
+        try {
+            Homestay updated = homestayService.updateHomestayWithImages(
+                    id, title, description, price, location, category, amenities, images
+            );
+
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
