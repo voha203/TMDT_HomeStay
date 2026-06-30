@@ -26,6 +26,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/users/register",
                                 "/api/users/login",
+                                "/api/users/google-login",
                                 "/api/users/forgot-password",
                                 "/api/users/reset-password"
                         ).permitAll()

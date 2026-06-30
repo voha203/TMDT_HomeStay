@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import Notification from "../../components/Notification.jsx";
 
 function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -13,7 +14,7 @@ function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert("Mật khẩu xác nhận không trùng khớp!");
+        Notification.error("Mật khẩu xác nhận không trùng khớp!");
       return;
     }
 
@@ -37,7 +38,7 @@ function ResetPassword() {
       if (typeof errorData === "object" && errorData !== null) {
         alert(errorData.message || JSON.stringify(errorData));
       } else {
-        alert(errorData || "Mã token không hợp lệ hoặc đã hết hạn!");
+          Notification.error(errorData || "Mã token không hợp lệ hoặc đã hết hạn!");
       }
     }
   };

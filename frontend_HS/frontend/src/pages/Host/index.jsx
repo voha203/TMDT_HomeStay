@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import Notification from "../../components/Notification.jsx";
 
 function Host() {
   const navigate = useNavigate();
@@ -9,29 +10,57 @@ function Host() {
   const [hostBookings, setHostBookings] = useState([]); 
   const [myHomestays, setMyHomestays] = useState([]); // Lưu danh sách phòng của Host này
   const [isEditing, setIsEditing] = useState(false); // Trạng thái đang sửa hay đang thêm mới
+  const location = useLocation();
   const [editId, setEditId] = useState(null);
 
-  // Thêm trường amenities vào object state chung của homestay
-  const [homestay, setHomestay] = useState({
-    title: "",
-    description: "",
-    price: "",
-    location: "",
-    image: "",
-    amenities: "", // Thêm ở đây để đồng bộ với hàm handleChange
-    category: "Apartment", // Loại hình homestay phục vụ cho bộ lọc ở trang chủ
-  });
+  // Thêm các state quản lý Review theo gợi ý của bạn
+  const [reviews, setReviews] = useState([]);
+  const [replyText, setReplyText] = useState({});
+
+  // Cấu hình thuộc tính category vào state mặc định
+    const [homestay, setHomestay] = useState({
+        title: "",
+        description: "",
+        price: "",
+        location: "",
+        category: "",
+        amenities: "",
+    });
+
+    const [images, setImages] = useState([]);
+    const [previews, setPreviews] = useState([]);
+
+    const handleImagesChange = (e) => {
+        const files = Array.from(e.target.files);
+
+        setImages(files);
+
+        const previewUrls = files.map((file) => URL.createObjectURL(file));
+        setPreviews(previewUrls);
+    };
+
+    const fetchHostHomestays = async () => {
+        const user = JSON.parse(localStorage.getItem("user"));
+
+        const res = await axios.get(
+            `http://localhost:8080/api/homestays/user/${user.id}`
+        );
+
+        setHomestays(res.data);
+    };
 
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (!loggedInUser || (loggedInUser.role !== "HOST" && loggedInUser.role !== "ADMIN")) {
-      alert("Bạn không có quyền!");
+      Notification.error("Bạn không có quyền!");
       navigate("/");
       return;
     }
     setUser(loggedInUser);
     fetchHostBookings(loggedInUser.id);
     fetchMyHomestays(loggedInUser.id);
+    fetchReviews(loggedInUser.id); // Lấy danh sách review khi component mount
+    fetchHostHomestays();
   }, [navigate]);
 
   const fetchHostBookings = async (hostId) => {
@@ -41,26 +70,86 @@ function Host() {
     } catch (error) { console.error(error); }
   };
 
-  // Lấy danh sách homestay do chính Host này đăng
   const fetchMyHomestays = async (hostId) => {
     try {
       const response = await axios.get("http://localhost:8080/api/homestays");
-      // Lọc ra các phòng có user.id trùng với hostId đang đăng nhập
       const filtered = response.data.filter(h => h.user && h.user.id === hostId);
       setMyHomestays(filtered);
     } catch (error) { console.error(error); }
   };
 
+  // Hàm lấy danh sách đánh giá của các homestay thuộc Host này
+  const fetchReviews = async (hostId) => {
+  try {
+    const reviewRes = await axios.get(
+      "http://localhost:8080/api/reviews"
+    );
+
+    const homestayRes = await axios.get(
+      "http://localhost:8080/api/homestays"
+    );
+
+    // Lấy danh sách phòng của host
+    const hostHomestays =
+      homestayRes.data.filter(
+        h => h.user?.id === hostId
+      );
+
+    const hostIds =
+      hostHomestays.map(
+        h => h.id
+      );
+
+    // Lọc review theo homestay
+    const filtered =
+      reviewRes.data.filter(
+        r => hostIds.includes(r.homestay?.id)
+      );
+
+    setReviews(filtered);
+
+    console.log("Review:", filtered);
+
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+  // Hàm gửi phản hồi review lên backend
+  const submitReply = async (reviewId) => {
+    try {
+      if (!replyText[reviewId]?.trim()) {
+      Notification.info("Nhập nội dung phản hồi");
+      return;
+    }
+      await axios.put(
+        `http://localhost:8080/api/reviews/${reviewId}/reply`,
+        replyText[reviewId],
+        { headers: { "Content-Type": "text/plain" } } // Thêm định dạng nếu truyền chuỗi raw string
+      );
+      Notification.success("Đã phản hồi!");
+      setReplyText({
+      ...replyText,
+      [reviewId]: "",
+    });
+
+    fetchReviews(user.id);
+
+  } catch (error) {
+    console.error(error);
+    Notification.error("Không thể phản hồi");
+  }
+};
+
   const handleUpdateStatus = async (bookingId, newStatus) => {
     if (!window.confirm("Xác nhận thay đổi trạng thái đơn hàng?")) return;
     try {
       await axios.put(`http://localhost:8080/api/bookings/${bookingId}/status?status=${newStatus}`);
-      alert("Cập nhật thành công!");
+      Notification.success("Cập nhật thành công!");
       fetchHostBookings(user.id);
     } catch (error) { console.error(error); }
   };
 
-  // Kích hoạt chế độ sửa: Điền ngược dữ liệu cũ bao gồm cả amenities vào ô Input
   const handleEditClick = (item) => {
     setIsEditing(true);
     setEditId(item.id);
@@ -70,17 +159,16 @@ function Host() {
       price: item.price,
       location: item.location,
       image: item.image,
-      amenities: item.amenities || "", // Đổ dữ liệu tiện nghi cũ ra form sửa (nếu có)
-      category: item.category || "Apartment",
+      amenities: item.amenities || "",
+      category: item.category || "Villa",
     });
   };
 
-  // Xóa phòng
   const handleDeleteHomestay = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa vĩnh viễn căn homestay này?")) return;
     try {
       await axios.delete(`http://localhost:8080/api/homestays/${id}`);
-      alert("Xóa thành công!");
+      Notification.success("Xóa thành công!");
       fetchMyHomestays(user.id);
     } catch (error) { alert("Không thể xóa phòng này do đang có khách đặt!"); }
   };
@@ -90,19 +178,51 @@ function Host() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (isEditing) {
-        // Nếu đang sửa -> Gọi API PUT gửi đi nguyên object homestay đã tích hợp amenities
-        await axios.put(`http://localhost:8080/api/homestays/${editId}`, homestay);
-        alert("Cập nhật thông tin homestay thành công!");
-      } else {
-        // Nếu thêm mới -> Gọi API POST gửi đi nguyên object homestay đã tích hợp amenities
-        await axios.post(`http://localhost:8080/api/homestays/user/${user.id}`, homestay);
-        alert("Đăng bài thành công!");
+      e.preventDefault();
+
+      try {
+          const user = JSON.parse(localStorage.getItem("user"));
+
+          if (!user?.id) {
+              Notification.error("Bạn cần đăng nhập host để đăng homestay");
+              return;
+          }
+
+          if (images.length === 0) {
+              Notification.warning("Vui lòng chọn ít nhất 1 ảnh");
+              return;
+          }
+
+          const formData = new FormData();
+
+          formData.append("title", homestay.title);
+          formData.append("description", homestay.description);
+          formData.append("price", homestay.price);
+          formData.append("location", homestay.location);
+          formData.append("category", homestay.category);
+          formData.append("amenities", homestay.amenities);
+
+          images.forEach((image) => {
+              formData.append("images", image);
+          });
+
+          await axios.post(
+              `http://localhost:8080/api/homestays/user/${user.id}/with-images`,
+              formData,
+              {
+                  headers: {
+                      "Content-Type": "multipart/form-data",
+                  },
+              }
+          );
+
+
+          Notification.success("Đăng homestay thành công!");
+          fetchMyHomestays(user.id);
+      } catch (error) {
+          console.error(error);
+          Notification.error(error.response?.data || "Đăng homestay thất bại!");
       }
-      window.location.reload();
-    } catch (error) { console.error(error); }
   };
 
   return (
@@ -132,20 +252,35 @@ function Host() {
               </div>
             </div>
             <div>
-              <label className="block font-semibold text-gray-700 mb-1">Link hình ảnh</label>
-              <input type="text" name="image" value={homestay.image} required placeholder="URL ảnh..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" onChange={handleChange} />
+              <label className="block font-semibold text-gray-700 mb-1">Tải hình ảnh</label>
+              <input type="file" accept="image/*" multiple onChange={handleImagesChange} name="image" value={homestay.image} required placeholder="Chọn ảnh..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20"/>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                    {previews.map((src, index) => (
+                        <img
+                            key={index}
+                            src={src}
+                            alt={`preview-${index}`}
+                            className="w-full h-32 object-cover rounded-lg border"
+                        />
+                    ))}
+                </div>
             </div>
 
+            {/* CHỌN LOẠI HÌNH (CATEGORY) */}
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Loại hình</label>
-              <select name="category" value={homestay.category} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" onChange={handleChange}>
-                <option value="Apartment">🏢 Căn hộ (Apartment)</option>
-                <option value="Villa">🏡 Biệt thự (Villa)</option>
-                <option value="Bungalow">🪵 Nhà gỗ (Bungalow)</option>
+              <select
+                name="category"
+                value={homestay.category}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20 bg-white"
+              >
+                <option value="Villa">🏡 Biệt thự</option>
+                <option value="Apartment">🏢 Căn hộ</option>
+                <option value="Bungalow">🪵 Nhà gỗ</option>
               </select>
             </div>
 
-            {/* ================= THÊM KHU VỰC NHẬP TIỆN NGHI TẠI ĐÂY ================= */}
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Tiện nghi</label>
               <textarea
@@ -175,7 +310,7 @@ function Host() {
           </form>
         </div>
 
-        {/* CỘT 2 & 3: QUẢN LÝ ĐƠN HÀNG & DANH SÁCH TÀI SẢN */}
+        {/* CỘT 2 & 3: QUẢN LÝ ĐƠN HÀNG, TÀI SẢN & ĐÁNH GIÁ */}
         <div className="lg:col-span-2 space-y-10">
           
           {/* BẢNG ĐƠN ĐẶT PHÒNG CỦA KHÁCH */}
@@ -202,7 +337,7 @@ function Host() {
                       <tr key={booking.id} className="hover:bg-gray-50/50 transition">
                         <td className="p-4 pl-6 font-bold text-blue-900">#BK-{booking.id}</td>
                         <td className="p-4">
-                          <div className="font-bold text-gray-900">{booking.user?.fullName}</div>
+                          <div className="font-bold text-gray-900">{booking.user?.name}</div>
                           <div className="text-gray-400 text-xs">{booking.user?.email}</div>
                         </td>
                         <td className="p-4 font-semibold text-gray-900">{booking.homestay?.title}</td>
@@ -225,7 +360,7 @@ function Host() {
             )}
           </div>
 
-          {/* BẢNG TÍNH NĂNG MỚI: DANH SÁCH TÀI SẢN ĐANG CÓ (CRUD) */}
+          {/* BẢNG DANH SÁCH TÀI SẢN ĐANG CÓ (CRUD) */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-100 bg-gray-50/50">
               <h1 className="text-xl font-black text-gray-950">🏠 Danh sách phòng của tôi ({myHomestays.length})</h1>
@@ -254,13 +389,70 @@ function Host() {
                         <td className="p-4">{item.location}</td>
                         <td className="p-4 font-semibold text-blue-900">{item.price?.toLocaleString()} đ</td>
                         <td className="p-4 pr-6 text-center flex gap-2 justify-center pt-7">
-                          <button onClick={() => handleEditClick(item)} className="px-3 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition text-xs cursor-pointer">Sửa</button>
+                          <button onClick={() => navigate(`/host/edit/${item.id}`)} className="px-3 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition text-xs cursor-pointer">Sửa</button>
                           <button onClick={() => handleDeleteHomestay(item.id)} className="px-3 py-1 bg-red-50 text-red-600 font-bold rounded-lg border border-red-100 hover:bg-red-100 transition text-xs cursor-pointer">Xóa</button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* KHU VỰC PHẢN HỒI ĐÁNH GIÁ (REVIEWS CHƯA/ĐÃ PHẢN HỒI) */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+              <h1 className="text-xl font-black text-gray-950">⭐ Đánh giá từ khách hàng ({reviews.length})</h1>
+            </div>
+            {reviews.length === 0 ? (
+              <div className="text-center py-10 text-gray-400 text-sm">Chưa có đánh giá nào cho các homestay của bạn.</div>
+            ) : (
+              <div className="p-6 space-y-6 max-h-[500px] overflow-y-auto">
+                {reviews.map((review) => (
+                  <div key={review.id} className="border-b border-gray-100 pb-6 last:border-none last:pb-0 text-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="font-bold text-gray-900">{review.user?.name || "Khách ẩn danh"}</span>
+                        <span className="text-xs text-gray-400 ml-2">đã đánh giá tại</span>
+                        <span className="font-semibold text-blue-900 ml-1">[{review.homestay?.title}]</span>
+                      </div>
+                      <div className="text-yellow-500 font-bold">⭐ {review.rating}/5</div>
+                    </div>
+                    <p className="text-gray-600 italic bg-gray-50 p-3 rounded-xl mb-3">"{review.comment}"</p>
+
+                    {/* Logic Render Form trả lời hoặc Render nội dung Phản hồi cũ */}
+                    <div className="mt-3">
+                      {!review.reply ? (
+                        <>
+                          <textarea
+                            className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/20 resize-none"
+                            placeholder="Trả lời khách..."
+                            rows="2"
+                            value={replyText[review.id] || ""}
+                            onChange={(e) =>
+                              setReplyText({
+                                ...replyText,
+                                [review.id]: e.target.value,
+                              })
+                            }
+                          />
+                          <button
+                            onClick={() => submitReply(review.id)}
+                            className="mt-2 bg-blue-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-800 transition"
+                          >
+                            Trả lời
+                          </button>
+                        </>
+                      ) : (
+                        <div className="bg-blue-50/70 p-4 rounded-xl border border-blue-100">
+                          <div className="font-bold text-blue-900 text-xs mb-1">💬 Phản hồi từ Host</div>
+                          <div className="text-gray-700 text-sm">{review.reply}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

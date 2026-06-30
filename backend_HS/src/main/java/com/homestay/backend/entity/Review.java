@@ -3,6 +3,8 @@ package com.homestay.backend.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "reviews")
 @Data
@@ -17,4 +19,8 @@ public class Review {
     @ManyToOne
     @JoinColumn(name = "homestay_id")
     private Homestay homestay; // Thuộc bài đăng homestay nào
+    @Column(columnDefinition = "TEXT")
+    private String reply;
+
+    private LocalDateTime replyDate;
 }

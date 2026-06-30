@@ -5,11 +5,10 @@ import com.homestay.backend.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashMap;
 @Service
 public class BookingService {
 
@@ -91,55 +90,126 @@ public class BookingService {
     }
     public Map<String, Object> getHostAnalytics(Long hostId) {
 
-        List<Booking> confirmedBookings = bookingRepository.findAll().stream()
-                .filter(b -> b.getHomestay() != null
-                        && b.getHomestay().getUser() != null
-                        && b.getHomestay().getUser().getId().equals(hostId)
-                        && "CONFIRMED".equals(b.getStatus()))
-                .toList();
+        List<Booking> paidBookings =
+                bookingRepository.findAll()
+                        .stream()
+                        .filter(
+                                b ->
+                                        b.getHomestay() != null
+                                                &&
+                                                b.getHomestay().getUser() != null
+                                                &&
+                                                b.getHomestay()
+                                                        .getUser()
+                                                        .getId()
+                                                        .equals(hostId)
+                                                &&
+                                                "CONFIRMED".equals(
+                                                        b.getStatus()
+                                                )
+                                                &&
+                                                "PAID".equals(
+                                                        b.getPaymentStatus()
+                                                )
+                        )
+                        .toList();
 
-        double totalRevenue = confirmedBookings.stream()
-                .mapToDouble(Booking::getTotalPrice)
-                .sum();
+        Map<String, Object> analytics =
+                new HashMap<>();
 
-        int totalBookings = confirmedBookings.size();
+        double totalRevenue =
+                paidBookings
+                        .stream()
+                        .mapToDouble(
+                                Booking::getTotalPrice
+                        )
+                        .sum();
 
-        Map<String, Object> analytics = new HashMap<>();
+        analytics.put(
+                "totalRevenue",
+                totalRevenue
+        );
 
-        analytics.put("totalRevenue", totalRevenue);
-        analytics.put("totalBookings", totalBookings);
+        analytics.put(
+                "totalBookings",
+                paidBookings.size()
+        );
 
-        analytics.put("monthlyLabels",
-                Arrays.asList("Tháng 1", "Tháng 2", "Tháng 3",
-                        "Tháng 4", "Tháng 5", "Tháng 6"));
-
-        analytics.put("monthlyData",
+        analytics.put(
+                "monthlyLabels",
                 Arrays.asList(
-                        totalRevenue * 0.1,
-                        totalRevenue * 0.15,
-                        totalRevenue * 0.2,
-                        totalRevenue * 0.12,
-                        totalRevenue * 0.18,
+                        "T1",
+                        "T2",
+                        "T3",
+                        "T4",
+                        "T5",
+                        "T6"
+                )
+        );
+
+        analytics.put(
+                "monthlyData",
+                Arrays.asList(
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
                         totalRevenue
-                ));
+                )
+        );
 
-        Map<String, Double> categoryRevenue = getCategoryRevenue(confirmedBookings);
+        double apartment = 0;
+        double villa = 0;
+        double bungalow = 0;
 
-        analytics.put("categoryLabels",
-                categoryRevenue.keySet().stream().toList());
+        for (Booking b : paidBookings) {
 
-        analytics.put("categoryData",
-                categoryRevenue.values().stream().toList());
+            String type =
+                    b.getHomestay()
+                            .getCategory();
+
+            if (type == null)
+                continue;
+
+            switch (type.toUpperCase()) {
+
+                case "APARTMENT":
+                    apartment +=
+                            b.getTotalPrice();
+                    break;
+
+                case "VILLA":
+                    villa +=
+                            b.getTotalPrice();
+                    break;
+
+                case "BUNGALOW":
+                    bungalow +=
+                            b.getTotalPrice();
+                    break;
+            }
+        }
+
+        analytics.put(
+                "categoryLabels",
+                Arrays.asList(
+                        "Căn hộ",
+                        "Biệt thự",
+                        "Nhà gỗ"
+                )
+        );
+
+        analytics.put(
+                "categoryData",
+                Arrays.asList(
+                        apartment,
+                        villa,
+                        bungalow
+                )
+        );
 
         return analytics;
-    }
-
-    private Map<String, Double> getCategoryRevenue(List<Booking> confirmedBookings) {
-        return confirmedBookings.stream()
-                .collect(Collectors.groupingBy(
-                        b -> b.getHomestay() != null ? b.getHomestay().getCategory() : "Khác",
-                        Collectors.summingDouble(Booking::getTotalPrice)
-                ));
     }
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();

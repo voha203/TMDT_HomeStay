@@ -11,6 +11,7 @@ import Dashboard from "../pages/Dashboard";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
 import Admin from "../pages/Admin";
+import EditHomestay from "../pages/Host/EditHomestay.jsx";
 
 function AppRoutes() {
   return (
@@ -41,6 +42,8 @@ function AppRoutes() {
 
       {/* ADMIN */}
         <Route path="/admin" element={<Admin />} />
+
+      <Route path="/host/edit/:id" element={<EditHomestay />} />
     </Routes>
   );
 }

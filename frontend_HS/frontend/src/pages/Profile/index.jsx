@@ -2,198 +2,65 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
-
-const API_BASE_URL = "http://localhost:8080/api";
-const ALL_BOOKINGS_STATUS = "ALL";
-const EMPTY_PROFILE_FORM = {
-  fullName: "",
-  email: "",
-  role: "",
-};
-const EMPTY_PASSWORD_FORM = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-};
-const BOOKING_FILTERS = [
-  { value: ALL_BOOKINGS_STATUS, label: "Tất cả" },
-  { value: "PENDING", label: "Chờ duyệt" },
-  { value: "CONFIRMED", label: "Đã xác nhận" },
-  { value: "CANCELLED", label: "Đã hủy" },
-  { value: "PAID", label: "Đã thanh toán" },
-];
-
-function getStoredUser() {
-  return JSON.parse(localStorage.getItem("user"));
-}
+import Notification from "../../components/Notification.jsx";
 
 function Profile() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
-  const [currentUser, setCurrentUser] = useState(getStoredUser());
-  const [profileForm, setProfileForm] = useState(EMPTY_PROFILE_FORM);
-  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM);
-  const [bookingStatusFilter, setBookingStatusFilter] = useState(ALL_BOOKINGS_STATUS);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [passwordSaving, setPasswordSaving] = useState(false);
-
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // State quản lý Popup thanh toán ảo
   const [showPayModal, setShowPayModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  async function fetchProfile(userId) {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/users/${userId}`);
-      const profile = response.data;
-
-      setCurrentUser(profile);
-      setProfileForm({
-        fullName: profile.fullName || "",
-        email: profile.email || "",
-        role: profile.role || "",
-      });
-    } catch (error) {
-      console.error(error);
-      alert("Không thể tải thông tin hồ sơ!");
-    } finally {
-      setProfileLoading(false);
-    }
-  }
-
-  async function fetchMyBookings(userId) {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/bookings/user/${userId}`);
-      setBookings(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   useEffect(() => {
-    const user = getStoredUser();
-    if (!user?.id) {
-      alert("Bạn cần đăng nhập!");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) {
+      Notification.error("Bạn cần đăng nhập!");
       navigate("/login");
       return;
     }
-
-    fetchProfile(user.id);
+    setCurrentUser(user);
     fetchMyBookings(user.id);
   }, [navigate]);
 
-  const filteredBookings = bookings.filter((booking) => {
-    if (bookingStatusFilter === ALL_BOOKINGS_STATUS) return true;
-    if (bookingStatusFilter === "PAID") return booking.paymentStatus === "PAID";
-    return booking.status === bookingStatusFilter;
-  });
-
-  const handleProfileChange = (event) => {
-    const { name, value } = event.target;
-    setProfileForm((previousForm) => ({
-      ...previousForm,
-      [name]: value,
-    }));
-  };
-
-  const handlePasswordChange = (event) => {
-    const { name, value } = event.target;
-    setPasswordForm((previousForm) => ({
-      ...previousForm,
-      [name]: value,
-    }));
-  };
-
-  const handleProfileSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!currentUser?.id) return;
-
+  const fetchMyBookings = async (userId) => {
     try {
-      setProfileSaving(true);
-      const response = await axios.put(`${API_BASE_URL}/users/${currentUser.id}`, {
-        fullName: profileForm.fullName.trim(),
-        email: profileForm.email.trim(),
-      });
-      const updatedProfile = response.data;
-      const storedUser = getStoredUser();
-      const updatedUser = {
-        ...storedUser,
-        ...updatedProfile,
-      };
-
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      setCurrentUser(updatedUser);
-      setProfileForm({
-        fullName: updatedProfile.fullName || "",
-        email: updatedProfile.email || "",
-        role: updatedProfile.role || "",
-      });
-      alert("Cập nhật hồ sơ thành công!");
-    } catch (error) {
-      console.error(error);
-      alert(error.response?.data || "Cập nhật hồ sơ thất bại!");
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  const handlePasswordSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!currentUser?.id) return;
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("Mật khẩu xác nhận không trùng khớp!");
-      return;
-    }
-
-    try {
-      setPasswordSaving(true);
-      const response = await axios.put(`${API_BASE_URL}/users/${currentUser.id}/change-password`, {
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-      alert(response.data || "Đổi mật khẩu thành công!");
-      setPasswordForm(EMPTY_PASSWORD_FORM);
-    } catch (error) {
-      console.error(error);
-      alert(error.response?.data || "Đổi mật khẩu thất bại!");
-    } finally {
-      setPasswordSaving(false);
-    }
+      const response = await axios.get(`http://localhost:8080/api/bookings/user/${userId}`);
+      setBookings(response.data);
+    } catch (error) { console.error(error); }
   };
 
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm("Bạn chắc chắn muốn hủy yêu cầu đặt phòng này?")) return;
     try {
-      await axios.put(`${API_BASE_URL}/bookings/${bookingId}/status?status=CANCELLED`);
-      alert("Hủy đơn thành công!");
+      await axios.put(`http://localhost:8080/api/bookings/${bookingId}/status?status=CANCELLED`);
+      Notification.success("Hủy đơn thành công!");
       fetchMyBookings(currentUser.id);
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) { console.error(error); }
   };
 
+  // Kích hoạt cổng thanh toán QR ngân hàng ảo
   const handleOpenPayment = (booking) => {
     setSelectedBooking(booking);
     setShowPayModal(true);
   };
 
+  // Thực hiện lệnh xác nhận đã chuyển tiền thành công
   const handleConfirmPayment = async () => {
     try {
-      await axios.put(`${API_BASE_URL}/bookings/${selectedBooking.id}/pay`);
-      alert("💳 Hệ thống đã ghi nhận cổng thanh toán! Hóa đơn số #" + selectedBooking.id + " đã hoàn tất thanh toán thành công.");
+      await axios.put(`http://localhost:8080/api/bookings/${selectedBooking.id}/pay`);
+      Notification.success("💳 Hệ thống đã ghi nhận cổng thanh toán! Hóa đơn số #" + selectedBooking.id + " đã hoàn tất thanh toán thành công.");
       setShowPayModal(false);
-      fetchMyBookings(currentUser.id);
-    } catch (error) {
-      console.error(error);
-      alert("Trục trặc cổng thanh toán!");
-    }
+      fetchMyBookings(currentUser.id); // Reload dữ liệu
+    } catch (error) { Notification.error("Trục trặc cổng thanh toán!"); }
   };
 
   const renderStatusBadge = (status, payStatus) => {
     if (status === "CANCELLED") return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full font-semibold text-xs">Đã hủy đơn</span>;
     if (status === "PENDING") return <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full font-semibold text-xs">Chờ Host duyệt</span>;
-
+    
+    // Nếu đơn được CONFIRMED thì xét tiếp trạng thái tiền bạc
     if (status === "CONFIRMED") {
       return (
         <div className="flex flex-col gap-1 items-start">
@@ -206,96 +73,32 @@ function Profile() {
         </div>
       );
     }
-
-    return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full font-semibold text-xs">{status}</span>;
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-6 py-32 space-y-8">
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-                {(profileForm.fullName || "?").charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h1 className="text-2xl font-black text-gray-950">Hồ sơ cá nhân</h1>
-                <p className="text-gray-500 text-sm">Xem và cập nhật thông tin tài khoản của bạn</p>
-              </div>
+      <div className="max-w-6xl mx-auto px-6 py-32">
+        {currentUser && (
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 flex items-center gap-4">
+            <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+              {currentUser.fullName?.charAt(0).toUpperCase()}
             </div>
-
-            {profileLoading ? (
-              <div className="text-center py-10 text-gray-500 font-semibold">Đang tải hồ sơ...</div>
-            ) : (
-              <form onSubmit={handleProfileSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Họ và tên</label>
-                  <input type="text" name="fullName" value={profileForm.fullName} required onChange={handleProfileChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
-                  <input type="email" name="email" value={profileForm.email} required onChange={handleProfileChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Vai trò</label>
-                  <input type="text" value={profileForm.role} disabled className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-100 text-gray-500" />
-                </div>
-
-                <button type="submit" disabled={profileSaving} className="w-full bg-blue-900 text-white py-2.5 rounded-xl font-bold hover:bg-blue-800 transition disabled:opacity-60 cursor-pointer">
-                  {profileSaving ? "Đang lưu..." : "Lưu thay đổi"}
-                </button>
-              </form>
-            )}
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{currentUser.fulllName}</h2>
+              <p className="text-gray-500 text-sm">{currentUser.email} • Vai trò: <span className="font-semibold text-blue-900">{currentUser.role}</span></p>
+            </div>
           </div>
-
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-black text-gray-950 mb-2">Đổi mật khẩu</h2>
-            <p className="text-gray-500 text-sm mb-6">Nhập mật khẩu hiện tại và mật khẩu mới để cập nhật bảo mật tài khoản.</p>
-
-            <form onSubmit={handlePasswordSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Mật khẩu hiện tại</label>
-                <input type="password" name="currentPassword" value={passwordForm.currentPassword} required onChange={handlePasswordChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Mật khẩu mới</label>
-                <input type="password" name="newPassword" value={passwordForm.newPassword} required minLength={6} onChange={handlePasswordChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Xác nhận mật khẩu mới</label>
-                <input type="password" name="confirmPassword" value={passwordForm.confirmPassword} required minLength={6} onChange={handlePasswordChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-900/20" />
-              </div>
-
-              <button type="submit" disabled={passwordSaving} className="w-full bg-orange-600 text-white py-2.5 rounded-xl font-bold hover:bg-orange-700 transition disabled:opacity-60 cursor-pointer">
-                {passwordSaving ? "Đang đổi..." : "Đổi mật khẩu"}
-              </button>
-            </form>
-          </div>
-        </div>
+        )}
 
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-black text-gray-950">Lịch sử đặt phòng của tôi</h2>
-              <p className="text-sm text-gray-500 mt-1">Đang hiển thị {filteredBookings.length}/{bookings.length} đơn</p>
-            </div>
-
-            <select value={bookingStatusFilter} onChange={(event) => setBookingStatusFilter(event.target.value)} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-900/20">
-              {BOOKING_FILTERS.map((filter) => (
-                <option key={filter.value} value={filter.value}>{filter.label}</option>
-              ))}
-            </select>
+          <div className="p-6 border-b border-gray-100">
+            <h1 className="text-2xl font-black text-gray-950">Lịch sử đặt phòng của tôi</h1>
           </div>
 
-          {filteredBookings.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">Không có đơn đặt phòng phù hợp!</div>
+          {bookings.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">Bạn chưa đặt phòng nào!</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -310,7 +113,7 @@ function Profile() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-600 font-medium">
-                  {filteredBookings.map((booking) => (
+                  {bookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-gray-50/50 transition">
                       <td className="p-4 pl-6 font-bold text-blue-900">#BK-{booking.id}</td>
                       <td className="p-4 font-semibold text-gray-900">{booking.homestay?.title}</td>
@@ -324,7 +127,8 @@ function Profile() {
                         {booking.status === "PENDING" && (
                           <button onClick={() => handleCancelBooking(booking.id)} className="px-3 py-1.5 bg-red-50 text-red-600 font-bold rounded-lg border border-red-100 hover:bg-red-100 text-xs cursor-pointer">Hủy phòng</button>
                         )}
-
+                        
+                        {/* HIỆN NÚT THANH TOÁN KHI ĐƯỢC DUYỆT VÀ CHƯA TRẢ TIỀN */}
                         {booking.status === "CONFIRMED" && booking.paymentStatus === "UNPAID" && (
                           <button onClick={() => handleOpenPayment(booking)} className="px-3 py-1.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 shadow-md text-xs cursor-pointer">
                             💳 Thanh toán ngay
@@ -344,18 +148,24 @@ function Profile() {
         </div>
       </div>
 
+      {/* POPUP MÔ PHỎNG CỔNG THANH TOÁN QR CODE NGÂN HÀNG (MỚI) */}
       {showPayModal && selectedBooking && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-gray-100">
             <h3 className="text-lg font-black text-gray-950">Cổng thanh toán QR trực tuyến</h3>
             <p className="text-xs text-gray-500">Vui lòng quét mã QR dưới đây để thực hiện thanh toán hóa đơn giá trị <span className="font-bold text-gray-900">{selectedBooking.totalPrice?.toLocaleString()} đ</span></p>
-
+            
+            {/* Sử dụng API tạo mã QR động theo đúng số tiền cực kỳ xịn sò */}
             <div className="bg-gray-100 p-4 rounded-2xl flex justify-center border border-gray-200">
-              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PayBooking_ID_${selectedBooking.id}_Amount_${selectedBooking.totalPrice}`} alt="QR Code Payment" className="w-44 h-44 rounded-lg shadow-sm" />
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PayBooking_ID_${selectedBooking.id}_Amount_${selectedBooking.totalPrice}`} 
+                alt="QR Code Payment" 
+                className="w-44 h-44 rounded-lg shadow-sm"
+              />
             </div>
 
             <div className="text-[11px] text-gray-400 font-medium">Nội dung CK mặc định: <span className="text-gray-700 font-bold">Luxestay BK-{selectedBooking.id}</span></div>
-
+            
             <div className="flex gap-3 pt-2">
               <button onClick={handleConfirmPayment} className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition text-sm">
                 Tôi đã chuyển khoản xong
@@ -367,6 +177,7 @@ function Profile() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

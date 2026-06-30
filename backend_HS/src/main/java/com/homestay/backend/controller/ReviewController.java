@@ -1,6 +1,7 @@
 package com.homestay.backend.controller;
 
 import com.homestay.backend.entity.Review;
+import com.homestay.backend.repository.ReviewRepository;
 import com.homestay.backend.service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,16 +24,10 @@ public class ReviewController {
         return reviewService
                 .getReviewsByHomestay(homestayId);
     }
-
-    @GetMapping("/homestay/{homestayId}/average")
-    public ResponseEntity<Double> getAverageRating(
-            @PathVariable Long homestayId) {
-
-        return ResponseEntity.ok(
-                reviewService.getAverageRating(homestayId)
-        );
+    @GetMapping
+    public List<Review> getAllReviews() {
+        return reviewService.getAllReviews();
     }
-
     // 2. Đăng bình luận mới
 
     @PostMapping
@@ -53,5 +48,12 @@ public class ReviewController {
                     .body("Lỗi gửi bình luận: "
                             + e.getMessage());
         }
+    }
+    @PutMapping("/{id}/reply")
+    public String replyReview(
+            @PathVariable Long id,
+            @RequestBody String reply
+    ){
+        return reviewService.replyReview(id, reply);
     }
 }

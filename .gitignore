@@ -33,3 +33,6 @@ dist/
 
 # Spring Boot secret
 src/main/resources/application-secret.properties
+
+backend_HS/uploads/
+uploads/

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import GoogleLoginButton from "../../components/GoogleLoginButton";
+import Notification from "../../components/Notification";
 
 function Login() {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -11,19 +13,44 @@ function Login() {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Chặn việc reload trang của thẻ form
+    e.preventDefault();
+
     try {
-      const response = await axios.post("http://localhost:8080/api/users/login", loginData);
+      const response = await axios.post(
+        "http://localhost:8080/api/users/login",
+        loginData
+      );
+
       if (response.data) {
-        localStorage.setItem("user", JSON.stringify(response.data));
-        alert("Đăng nhập thành công!");
-        navigate("/"); // Về trang chủ luôn
+        localStorage.setItem(
+          "user",
+          JSON.stringify(response.data)
+        );
+
+        Notification.success("Đăng nhập thành công");
+
+        // Điều hướng theo role
+        if (response.data.role === "ADMIN") {
+          navigate("/admin");
+        }
+        else if (response.data.role === "HOST") {
+          navigate("/host");
+        }
+        else {
+          navigate("/");
+        }
+
       } else {
-        alert("Sai email hoặc mật khẩu!");
+          Notification.error("Sai email hoặc mật khẩu!");
       }
+
     } catch (error) {
       console.error(error);
-      alert(error.response?.data || "Đăng nhập thất bại!");
+
+        Notification.error(
+        error.response?.data ||
+        "Đăng nhập thất bại!"
+      );
     }
   };
 
@@ -32,7 +59,7 @@ function Login() {
       <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-gray-100">
         <h1 className="text-3xl font-extrabold text-gray-900 text-center mb-2">Chào mừng trở lại</h1>
         <p className="text-gray-500 text-center mb-8 text-sm">Vui lòng đăng nhập tài khoản Luxestay của bạn</p>
-        
+
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ Email</label>
@@ -50,8 +77,8 @@ function Login() {
             <div className="flex justify-between items-center mb-2">
               <label className="text-sm font-semibold text-gray-700">Mật khẩu</label>
               {/*QUÊN MẬT KHẨU */}
-              <Link 
-                to="/forgot-password" 
+              <Link
+                to="/forgot-password"
                 className="text-xs font-semibold text-blue-900 hover:underline transition"
               >
                 Quên mật khẩu?
@@ -73,6 +100,9 @@ function Login() {
           >
             Đăng nhập
           </button>
+
+
+            <GoogleLoginButton />
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-8">

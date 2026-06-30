@@ -1,13 +1,9 @@
 package com.homestay.backend.controller;
 
-import com.homestay.backend.dto.ChangePasswordRequest;
-import com.homestay.backend.dto.UpdateProfileRequest;
-import com.homestay.backend.dto.UpdateRoleRequest;
-import com.homestay.backend.dto.UserProfileResponse;
+import com.homestay.backend.entity.GoogleLoginRequest;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
 import com.homestay.backend.service.UserService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +50,6 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
-
     // 2. API Đăng nhập hệ thống
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User loginRequest) {
@@ -137,15 +132,16 @@ public class UserController {
             return ResponseEntity.badRequest().body("Mã xác nhận (Token) không hợp lệ, sai cấu trúc hoặc đã hết hạn sử dụng!");
         }
     }
-
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProfile(@PathVariable Long id) {
+    public ResponseEntity<?> getProfile(
+            @PathVariable Long id) {
 
         try {
 
-            User user = userService.getProfile(id);
+            User user =
+                    userService.getProfile(id);
 
-            return ResponseEntity.ok(UserProfileResponse.from(user));
+            return ResponseEntity.ok(user);
 
         } catch (Exception e) {
 
@@ -154,17 +150,19 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
-
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProfile(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateProfileRequest request) {
+            @RequestBody User user) {
 
         try {
 
-            User updatedUser = userService.updateProfile(id, request);
+            User updatedUser =
+                    userService.updateProfile(
+                            id,
+                            user);
 
-            return ResponseEntity.ok(UserProfileResponse.from(updatedUser));
+            return ResponseEntity.ok(updatedUser);
 
         } catch (Exception e) {
 
@@ -173,39 +171,6 @@ public class UserController {
                     .body(e.getMessage());
         }
     }
-
-    @PutMapping("/{id}/change-password")
-    public ResponseEntity<?> changePassword(
-            @PathVariable Long id,
-            @Valid @RequestBody ChangePasswordRequest request) {
-
-        try {
-            userService.changePassword(id, request);
-            return ResponseEntity.ok("Đổi mật khẩu thành công");
-        } catch (Exception e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
-    }
-
-    @PutMapping("/{id}/role")
-    public ResponseEntity<?> updateUserRole(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateRoleRequest request) {
-
-        try {
-            User user = userService.getProfile(id);
-            user.setRole(request.role());
-            userRepository.save(user);
-            return ResponseEntity.ok("Cập nhật role thành công");
-        } catch (Exception e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id) {
@@ -213,5 +178,18 @@ public class UserController {
         userRepository.deleteById(id);
 
         return ResponseEntity.ok("Xóa user thành công");
+    }
+
+//    Đăng nhập bằng google
+    @PostMapping("/google-login")
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+        try {
+            User user = userService.googleLogin(request.getToken());
+            user.setPassword(null);
+            user.setResetToken(null);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Đăng nhập Google thất bại");
+        }
     }
 }

@@ -1,26 +1,26 @@
 package com.homestay.backend.service;
 
-import com.homestay.backend.dto.ChangePasswordRequest;
-import com.homestay.backend.dto.UpdateProfileRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.Console;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
 
-    private static final String EMAIL_EXISTS_MESSAGE = "Email đã tồn tại";
-    private static final String USER_NOT_FOUND_MESSAGE = "Không tìm thấy người dùng";
-    private static final String CURRENT_PASSWORD_INVALID_MESSAGE = "Mật khẩu hiện tại không chính xác";
-    private static final String BCRYPT_PREFIX = "$2a$";
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -28,11 +28,10 @@ public class UserService {
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
 
         if (existingUser.isPresent()) {
-            throw new RuntimeException(EMAIL_EXISTS_MESSAGE);
+            throw new RuntimeException("Email đã tồn tại");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
         if (user.getRole() == null) {
             user.setRole("USER");
         }
@@ -46,7 +45,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
-            if (checkPassword(loginRequest.getPassword(), user)) {
+            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
                 user.setPassword(null);
                 user.setResetToken(null);
                 return user;
@@ -56,56 +55,62 @@ public class UserService {
         return null;
     }
 
+    @Value("${google.client.id}")
+    private String googleClientId;
+
+    public User googleLogin(String token) throws Exception {
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(),
+                GsonFactory.getDefaultInstance()
+        )
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+
+        GoogleIdToken idToken = verifier.verify(token);
+
+        if (idToken == null) {
+            throw new RuntimeException("Token Google không hợp lệ");
+        }
+
+        GoogleIdToken.Payload payload = idToken.getPayload();
+
+        String email = payload.getEmail();
+        String fullName = (String) payload.get("name");
+
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
+
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setFullName(fullName);
+        newUser.setRole("USER");
+        newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+
+        return userRepository.save(newUser);
+    }
+
     public User getProfile(Long userId) {
+
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE));
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy người dùng"));
     }
+    public User updateProfile(
+            Long userId,
+            User updatedUser) {
 
-    public User updateProfile(Long userId, UpdateProfileRequest request) {
-        User user = getProfile(userId);
-        String fullName = normalize(request.fullName());
-        String email = normalize(request.email());
+        return userRepository.findById(userId)
+                .map(user -> {
 
-        userRepository.findByEmail(email)
-                .filter(existingUser -> !existingUser.getId().equals(userId))
-                .ifPresent(existingUser -> {
-                    throw new RuntimeException(EMAIL_EXISTS_MESSAGE);
-                });
+                    user.setFullName(updatedUser.getFullName());
+                    user.setEmail(updatedUser.getEmail());
 
-        user.setFullName(fullName);
-        user.setEmail(email);
-
-        return userRepository.save(user);
-    }
-
-    public void changePassword(Long userId, ChangePasswordRequest request) {
-        User user = getProfile(userId);
-
-        if (!checkPassword(request.currentPassword(), user)) {
-            throw new RuntimeException(CURRENT_PASSWORD_INVALID_MESSAGE);
-        }
-
-        user.setPassword(passwordEncoder.encode(request.newPassword()));
-        userRepository.save(user);
-    }
-
-    private boolean checkPassword(String rawPassword, User user) {
-        // BCrypt match — for new users
-        if (user.getPassword().startsWith(BCRYPT_PREFIX)) {
-            return passwordEncoder.matches(rawPassword, user.getPassword());
-        }
-
-        // Plain text match — for old users, auto-migrate to BCrypt on success
-        if (user.getPassword().equals(rawPassword)) {
-            user.setPassword(passwordEncoder.encode(rawPassword));
-            userRepository.save(user);
-            return true;
-        }
-
-        return false;
-    }
-
-    private String normalize(String value) {
-        return value == null ? "" : value.trim();
+                    return userRepository.save(user);
+                })
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy người dùng"));
     }
 }
