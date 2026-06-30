@@ -1,6 +1,7 @@
 package com.homestay.backend.service;
 
 import com.homestay.backend.entity.Homestay;
+import com.homestay.backend.entity.HomestayImage;
 import com.homestay.backend.entity.User;
 import com.homestay.backend.repository.HomestayRepository;
 import com.homestay.backend.repository.UserRepository;
@@ -37,6 +38,29 @@ public class HomestayService {
         }
 
         homestay.setUser(userOptional.get());
+
+        return homestayRepository.save(homestay);
+    }
+
+    public Homestay createHomestayWithImages(Long userId, Homestay homestay, List<String> imageUrls) {
+        Optional<User> userOptional = userRepository.findById(userId);
+
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy Host");
+        }
+
+        homestay.setUser(userOptional.get());
+
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            homestay.setImage(imageUrls.get(0));
+
+            for (String url : imageUrls) {
+                HomestayImage image = new HomestayImage();
+                image.setImageUrl(url);
+                image.setHomestay(homestay);
+                homestay.getImages().add(image);
+            }
+        }
 
         return homestayRepository.save(homestay);
     }

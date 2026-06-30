@@ -8,6 +8,13 @@ import com.homestay.backend.service.HomestayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.Optional;
@@ -119,5 +126,54 @@ public class HomestayController {
         return ResponseEntity.ok(
                 homestayService.filterByCategory(category)
         );
+    }
+
+    @PostMapping(value = "/user/{userId}/with-images", consumes = "multipart/form-data")
+    public ResponseEntity<?> createHomestayWithImages(
+            @PathVariable Long userId,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam Double price,
+            @RequestParam String location,
+            @RequestParam String category,
+            @RequestParam String amenities,
+            @RequestParam("images") List<MultipartFile> images
+    ) {
+        try {
+            List<String> imageUrls = new ArrayList<>();
+
+            Path uploadPath = Paths.get("uploads/homestays");
+            Files.createDirectories(uploadPath);
+
+            for (MultipartFile file : images) {
+                if (!file.isEmpty()) {
+                    String originalName = file.getOriginalFilename();
+                    String extension = originalName != null && originalName.contains(".")
+                            ? originalName.substring(originalName.lastIndexOf("."))
+                            : "";
+
+                    String fileName = UUID.randomUUID() + extension;
+                    Path filePath = uploadPath.resolve(fileName);
+
+                    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                    imageUrls.add("http://localhost:8080/uploads/homestays/" + fileName);
+                }
+            }
+
+            Homestay homestay = new Homestay();
+            homestay.setTitle(title);
+            homestay.setDescription(description);
+            homestay.setPrice(price);
+            homestay.setLocation(location);
+            homestay.setCategory(category);
+            homestay.setAmenities(amenities);
+
+            Homestay saved = homestayService.createHomestayWithImages(userId, homestay, imageUrls);
+
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

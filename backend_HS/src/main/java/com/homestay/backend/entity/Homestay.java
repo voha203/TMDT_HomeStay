@@ -3,6 +3,9 @@ package com.homestay.backend.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "homestays")
 @Data
@@ -22,6 +25,9 @@ public class Homestay {
     private String location;
 
     private String image;
+
+    @OneToMany(mappedBy = "homestay", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HomestayImage> images = new ArrayList<>();
 
     private String category;
     @Column(length = 1000)
