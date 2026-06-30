@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Notification from "../../components/Notification.jsx";
 
@@ -10,6 +10,7 @@ function Host() {
   const [hostBookings, setHostBookings] = useState([]); 
   const [myHomestays, setMyHomestays] = useState([]); // Lưu danh sách phòng của Host này
   const [isEditing, setIsEditing] = useState(false); // Trạng thái đang sửa hay đang thêm mới
+  const location = useLocation();
   const [editId, setEditId] = useState(null);
 
   // Thêm các state quản lý Review theo gợi ý của bạn
@@ -38,6 +39,16 @@ function Host() {
         setPreviews(previewUrls);
     };
 
+    const fetchHostHomestays = async () => {
+        const user = JSON.parse(localStorage.getItem("user"));
+
+        const res = await axios.get(
+            `http://localhost:8080/api/homestays/user/${user.id}`
+        );
+
+        setHomestays(res.data);
+    };
+
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (!loggedInUser || (loggedInUser.role !== "HOST" && loggedInUser.role !== "ADMIN")) {
@@ -49,6 +60,7 @@ function Host() {
     fetchHostBookings(loggedInUser.id);
     fetchMyHomestays(loggedInUser.id);
     fetchReviews(loggedInUser.id); // Lấy danh sách review khi component mount
+    fetchHostHomestays();
   }, [navigate]);
 
   const fetchHostBookings = async (hostId) => {
@@ -147,8 +159,8 @@ function Host() {
       price: item.price,
       location: item.location,
       image: item.image,
-      amenities: item.amenities || "", 
-      category: item.category || "Villa", 
+      amenities: item.amenities || "",
+      category: item.category || "Villa",
     });
   };
 
@@ -204,7 +216,9 @@ function Host() {
               }
           );
 
+
           Notification.success("Đăng homestay thành công!");
+          fetchMyHomestays(user.id);
       } catch (error) {
           console.error(error);
           Notification.error(error.response?.data || "Đăng homestay thất bại!");
@@ -375,7 +389,7 @@ function Host() {
                         <td className="p-4">{item.location}</td>
                         <td className="p-4 font-semibold text-blue-900">{item.price?.toLocaleString()} đ</td>
                         <td className="p-4 pr-6 text-center flex gap-2 justify-center pt-7">
-                          <button onClick={() => handleEditClick(item)} className="px-3 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition text-xs cursor-pointer">Sửa</button>
+                          <button onClick={() => navigate(`/host/edit/${item.id}`)} className="px-3 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition text-xs cursor-pointer">Sửa</button>
                           <button onClick={() => handleDeleteHomestay(item.id)} className="px-3 py-1 bg-red-50 text-red-600 font-bold rounded-lg border border-red-100 hover:bg-red-100 transition text-xs cursor-pointer">Xóa</button>
                         </td>
                       </tr>
